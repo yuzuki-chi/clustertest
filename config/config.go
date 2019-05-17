@@ -45,7 +45,12 @@ func LoadFromBytes(b []byte) (*Config, error) {
 		return nil, err
 	}
 
-	// TODO: load spec
+	// Load spec.
+	conf.validatedSpec, err = conf.Spec_.Load()
+	if err != nil {
+		return nil, err
+	}
+
 	// Load scripts.
 	func() {
 		defer func() {
