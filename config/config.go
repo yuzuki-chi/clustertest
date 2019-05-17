@@ -41,7 +41,22 @@ func (c *Config) After() models.Script {
 func LoadFromBytes(b []byte) (*Config, error) {
 	conf := &Config{}
 	err := yaml.Unmarshal(b, conf)
+	if err != nil {
+		return nil, err
+	}
 
-	// TODO: load spec and scripts
-	return conf, err
+	// TODO: load spec
+	// Load scripts.
+	func() {
+		defer func() {
+			err = recover().(error)
+		}()
+		conf.validatedBefore = conf.Scripts.Before.MustLoad()
+		conf.validatedScript = conf.Scripts.Main.MustLoad()
+		conf.validatedAfter = conf.Scripts.After.MustLoad()
+	}()
+	if err != nil {
+		return nil, err
+	}
+	return conf, nil
 }
