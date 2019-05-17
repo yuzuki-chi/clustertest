@@ -1,8 +1,10 @@
 package cmdutils
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 // ExitCode wraps parent error and append exit code.
@@ -25,4 +27,8 @@ func RunCommand(command *cobra.Command) int {
 		return 1
 	}
 	return 0
+}
+
+func ShowError(err error) {
+	fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
 }

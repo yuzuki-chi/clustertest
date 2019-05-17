@@ -29,7 +29,7 @@ var taskCmd = &cobra.Command{
 var taskCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a task and enqueue it",
-	RunE:  notImplemented,
+	RunE:  taskCreateFn,
 }
 var taskWaitCmd = &cobra.Command{
 	Use:   "wait",
