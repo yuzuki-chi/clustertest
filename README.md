@@ -5,6 +5,12 @@
 * Linux Server
 * Proxmox VE nodes
 
+## Installation
+```bash
+$ go get -u github.com/yuuki0xff/clustertest/cmd/clustertest
+$ go get -u github.com/yuuki0xff/clustertest/cmd/clustertestd
+```
+
 ## Command Usage
 * `clustertest job create`
 * `clustertest job inspect [ID-or-Name]`
