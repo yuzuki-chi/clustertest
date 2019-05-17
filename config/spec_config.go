@@ -1,7 +1,8 @@
 package config
 
+import "github.com/yuuki0xff/clustertest/models"
+
 type SpecConfig struct {
-	// TODO: use SpecType
-	Type string
+	Type models.SpecType
 	Data interface{}
 }

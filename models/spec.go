@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+type SpecType string
+
 // Spec represents an infrastructure specification of clustered system.
 // The implementations of Spec interface includes Provisioner specific data.
 type Spec interface {
