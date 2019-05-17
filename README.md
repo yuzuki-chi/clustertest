@@ -12,12 +12,12 @@ $ go get -u github.com/yuuki0xff/clustertest/cmd/clustertestd
 ```
 
 ## Command Usage
-* `clustertest job create`
-* `clustertest job inspect [ID-or-Name]`
-* `clustertest job wait [ID-or-Name]`
-* `clustertest job cancel [ID-or-Name]`
-* `clustertest job output [ID-or-Name]`
-* `clustertest job delete [ID-or-Name]`
+* `clustertest task create`
+* `clustertest task inspect [ID-or-Name]`
+* `clustertest task wait [ID-or-Name]`
+* `clustertest task cancel [ID-or-Name]`
+* `clustertest task output [ID-or-Name]`
+* `clustertest task delete [ID-or-Name]`
 
 ## Example
 ```bash
