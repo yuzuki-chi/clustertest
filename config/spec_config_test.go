@@ -33,6 +33,14 @@ func TestSpecConfig_Load(t *testing.T) {
 		spec, err := c.Load()
 		assert.IsType(t, &testSpec{}, spec)
 		assert.NoError(t, err)
+
+		c = &SpecConfig{
+			Type: models.SpecType("empty-loader"),
+			Data: map[string]string{},
+		}
+		spec, err = c.Load()
+		assert.IsType(t, &testSpec{}, spec)
+		assert.NoError(t, err)
 	})
 }
 
