@@ -19,10 +19,10 @@ func TestSpecConfig_Load(t *testing.T) {
 
 	t.Run("use_empty_loader", func(t *testing.T) {
 		RegisteredSpecLoaders["empty-loader"] = func(js []byte) (models.Spec, error) {
-			assert.Contains(t, js, [][]byte{
-				[]byte("nil"),
+			assert.Contains(t, [][]byte{
+				[]byte("null"),
 				[]byte("{}"),
-			})
+			}, js)
 			return &testSpec{}, nil
 		}
 
