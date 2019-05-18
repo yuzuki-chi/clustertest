@@ -32,7 +32,6 @@ func TestSpecConfig_Load(t *testing.T) {
 		}
 		spec, err := c.Load()
 		assert.IsType(t, &testSpec{}, spec)
-		assert.Nil(t, spec)
 		assert.NoError(t, err)
 	})
 }
