@@ -48,7 +48,7 @@ func LoadFromDirs(dirs []string) ([]*Config, error) {
 		})
 		if file == "" {
 			// no match
-			return nil, fmt.Errorf("Not found config file on %s directory", dir)
+			return nil, fmt.Errorf("not found config file on %s directory", dir)
 		}
 		// match
 		files = append(files, file)
