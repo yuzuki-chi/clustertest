@@ -6,7 +6,7 @@ import (
 	"github.com/yuuki0xff/clustertest/models"
 )
 
-var RegisteredSpecLoaders map[models.SpecType]SpecLoader
+var RegisteredSpecLoaders = map[models.SpecType]SpecLoader{}
 
 type SpecLoader func(json []byte) (models.Spec, error)
 
