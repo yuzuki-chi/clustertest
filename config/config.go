@@ -46,19 +46,30 @@ func LoadFromBytes(b []byte) (*Config, error) {
 	}
 
 	// Load spec.
-	conf.validatedSpec, err = conf.Spec_.Load()
-	if err != nil {
-		return nil, err
+	if conf.Spec_ != nil {
+		conf.validatedSpec, err = conf.Spec_.Load()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Load scripts.
 	func() {
 		defer func() {
-			err = recover().(error)
+			if obj := recover(); obj != nil {
+				err = obj.(error)
+			}
 		}()
-		conf.validatedBefore = conf.Scripts.Before.MustLoad()
-		conf.validatedScript = conf.Scripts.Main.MustLoad()
-		conf.validatedAfter = conf.Scripts.After.MustLoad()
+
+		if conf.Scripts.Before != nil {
+			conf.validatedBefore = conf.Scripts.Before.MustLoad()
+		}
+		if conf.Scripts.Main != nil {
+			conf.validatedScript = conf.Scripts.Main.MustLoad()
+		}
+		if conf.Scripts.After != nil {
+			conf.validatedAfter = conf.Scripts.After.MustLoad()
+		}
 	}()
 	if err != nil {
 		return nil, err
