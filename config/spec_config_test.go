@@ -18,7 +18,7 @@ func TestSpecConfig_Load(t *testing.T) {
 	})
 
 	t.Run("should_success_when_empty_spec", func(t *testing.T) {
-		RegisteredSpecLoaders["empty-loader"] = func(js []byte) (models.Spec, error) {
+		RegisteredSpecLoaders["empty"] = func(js []byte) (models.Spec, error) {
 			assert.Contains(t, [][]byte{
 				[]byte("null"),
 				[]byte("{}"),
@@ -27,7 +27,7 @@ func TestSpecConfig_Load(t *testing.T) {
 		}
 
 		c := &SpecConfig{
-			Type: models.SpecType("empty-loader"),
+			Type: models.SpecType("empty"),
 			Data: nil,
 		}
 		spec, err := c.Load()
@@ -35,7 +35,7 @@ func TestSpecConfig_Load(t *testing.T) {
 		assert.NoError(t, err)
 
 		c = &SpecConfig{
-			Type: models.SpecType("empty-loader"),
+			Type: models.SpecType("empty"),
 			Data: map[string]string{},
 		}
 		spec, err = c.Load()
