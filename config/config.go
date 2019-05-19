@@ -10,7 +10,7 @@ import (
 type Config struct {
 	Version int
 	Name    string
-	Spec_   *SpecConfig
+	Spec_   *SpecConfig `yaml:"spec"`
 	Scripts struct {
 		Before *ScriptConfig
 		Main   *ScriptConfig
