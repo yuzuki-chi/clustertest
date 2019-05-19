@@ -49,9 +49,6 @@ type testSpec struct{}
 func (*testSpec) String() string {
 	return "testSpec"
 }
-func (*testSpec) MarshalJSON() ([]byte, error) {
-	panic("not implemented")
-}
-func (*testSpec) UnmarshalJSON([]byte) error {
-	panic("not implemented")
+func (*testSpec) Type() models.SpecType {
+	return models.SpecType("testSpec")
 }

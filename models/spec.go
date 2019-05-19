@@ -1,7 +1,6 @@
 package models
 
 import (
-	"encoding/json"
 	"fmt"
 )
 
@@ -11,13 +10,11 @@ type SpecType string
 // The implementations of Spec interface includes Provisioner specific data.
 type Spec interface {
 	fmt.Stringer
-	json.Marshaler
-	json.Unmarshaler
+	Type() SpecType
 }
 
 // InfraConfig represents current infrastructure configuration.
 type InfraConfig interface {
 	fmt.Stringer
-	json.Marshaler
-	json.Unmarshaler
+	Spec() Spec
 }
