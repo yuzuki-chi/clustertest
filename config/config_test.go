@@ -50,6 +50,10 @@ scripts:
 `))
 		assert.NoError(t, err)
 		assert.NotNil(t, conf)
+		assert.Equal(t, "foo", conf.Spec().(*fakeSpec).FakeField1)
+		assert.Equal(t, "bar", conf.Spec().(*fakeSpec).FakeField2)
+		assert.Equal(t, "a", conf.Script().(*fakeScript).FakeField1)
+		assert.Equal(t, "b", conf.Script().(*fakeScript).FakeField2)
 	})
 }
 
