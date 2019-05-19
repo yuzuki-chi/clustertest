@@ -40,15 +40,13 @@ version: 1
 name: test_config
 spec:
   type: fake_spec
-  data:
-    fake_field1: foo
-    fake_field2: bar
+  fake_field1: foo
+  fake_field2: bar
 scripts:
   main:
     type: fake_script
-    data:
-      fake_field1: a
-      fake_field2: b
+    fake_field1: a
+    fake_field2: b
 `))
 		assert.NoError(t, err)
 		assert.NotNil(t, conf)

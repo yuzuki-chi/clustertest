@@ -12,7 +12,7 @@ type ScriptLoader func(json []byte) (models.Script, error)
 
 type ScriptConfig struct {
 	Type models.ScriptType
-	Data map[string]interface{}
+	Data map[string]interface{} `yaml:",inline"`
 }
 
 func (c *ScriptConfig) Load() (models.Script, error) {

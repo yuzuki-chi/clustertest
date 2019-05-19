@@ -12,7 +12,7 @@ type SpecLoader func(json []byte) (models.Spec, error)
 
 type SpecConfig struct {
 	Type models.SpecType
-	Data map[string]interface{}
+	Data map[string]interface{} `yaml:",inline"`
 }
 
 func (c *SpecConfig) Load() (models.Spec, error) {
