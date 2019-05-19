@@ -6,7 +6,7 @@ import (
 	"github.com/yuuki0xff/clustertest/models"
 )
 
-var RegisteredScriptLoaders map[models.ScriptType]ScriptLoader
+var RegisteredScriptLoaders = map[models.ScriptType]ScriptLoader{}
 
 type ScriptLoader func(json []byte) (models.Script, error)
 
