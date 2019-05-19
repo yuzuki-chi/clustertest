@@ -1,7 +1,6 @@
 package models
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"time"
@@ -15,8 +14,6 @@ type ScriptType string
 // For example, this script contains shell script, ansible playbook, etc.
 type Script interface {
 	fmt.Stringer
-	json.Marshaler
-	json.Unmarshaler
 	// Type returns type name of this script.
 	Type() ScriptType
 	// Type specific methods
