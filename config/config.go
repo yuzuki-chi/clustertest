@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"github.com/yuuki0xff/clustertest/models"
 	"gopkg.in/yaml.v2"
@@ -37,6 +38,46 @@ func (c *Config) Script() models.Script {
 func (c *Config) After() models.Script {
 	return c.validatedAfter
 }
+func (c *Config) init() error {
+	var err error
+
+	if c.Version != 1 {
+		return fmt.Errorf("unsupported config version: %d", c.Version)
+	}
+	if c.Name == "" {
+		return errors.New("the Config.Name is empty")
+	}
+	if c.Spec_ == nil {
+		return errors.New("the Config.Spec is empty")
+	}
+	c.validatedSpec, err = c.Spec_.Load()
+	if err != nil {
+		return err
+	}
+
+	// Load scripts.
+	err = func() (err error) {
+		defer func() {
+			if obj := recover(); obj != nil {
+				err = obj.(error)
+			}
+		}()
+
+		if c.Scripts.Before != nil {
+			c.validatedBefore = c.Scripts.Before.MustLoad()
+		}
+		if c.Scripts.Main == nil {
+			err = errors.New("the Config.Scripts.Main is empty")
+			return
+		}
+		c.validatedScript = c.Scripts.Main.MustLoad()
+		if c.Scripts.After != nil {
+			c.validatedAfter = c.Scripts.After.MustLoad()
+		}
+		return
+	}()
+	return err
+}
 
 func LoadFromBytes(b []byte) (*Config, error) {
 	conf := &Config{}
@@ -45,32 +86,7 @@ func LoadFromBytes(b []byte) (*Config, error) {
 		return nil, err
 	}
 
-	// Load spec.
-	if conf.Spec_ != nil {
-		conf.validatedSpec, err = conf.Spec_.Load()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Load scripts.
-	func() {
-		defer func() {
-			if obj := recover(); obj != nil {
-				err = obj.(error)
-			}
-		}()
-
-		if conf.Scripts.Before != nil {
-			conf.validatedBefore = conf.Scripts.Before.MustLoad()
-		}
-		if conf.Scripts.Main != nil {
-			conf.validatedScript = conf.Scripts.Main.MustLoad()
-		}
-		if conf.Scripts.After != nil {
-			conf.validatedAfter = conf.Scripts.After.MustLoad()
-		}
-	}()
+	err = conf.init()
 	if err != nil {
 		return nil, err
 	}
