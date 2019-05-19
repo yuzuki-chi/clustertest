@@ -42,18 +42,24 @@ spec:
   type: fake_spec
   fake_field1: foo
   fake_field2: bar
+  nested:
+    nested_field1: baz
 scripts:
   main:
     type: fake_script
     fake_field1: a
     fake_field2: b
+    nested:
+      nested_field1: c
 `))
 		assert.NoError(t, err)
 		assert.NotNil(t, conf)
 		assert.Equal(t, "foo", conf.Spec().(*fakeSpec).FakeField1)
 		assert.Equal(t, "bar", conf.Spec().(*fakeSpec).FakeField2)
+		assert.Equal(t, "baz", conf.Spec().(*fakeSpec).Nested.NestedField1)
 		assert.Equal(t, "a", conf.Script().(*fakeScript).FakeField1)
 		assert.Equal(t, "b", conf.Script().(*fakeScript).FakeField2)
+		assert.Equal(t, "c", conf.Script().(*fakeScript).Nested.NestedField1)
 	})
 }
 
@@ -66,6 +72,9 @@ func fakeSpecLoader(js []byte) (models.Spec, error) {
 type fakeSpec struct {
 	FakeField1 string `json:"fake_field1"`
 	FakeField2 string `json:"fake_field2"`
+	Nested     struct {
+		NestedField1 string `json:"nested_field1"`
+	}
 }
 
 func (s *fakeSpec) String() string {
@@ -84,6 +93,9 @@ func fakeScriptLoader(js []byte) (models.Script, error) {
 type fakeScript struct {
 	FakeField1 string `json:"fake_field1"`
 	FakeField2 string `json:"fake_field2"`
+	Nested     struct {
+		NestedField1 string `json:"nested_field1"`
+	}
 }
 
 func (s *fakeScript) String() string {
