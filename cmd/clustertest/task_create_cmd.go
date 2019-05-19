@@ -14,6 +14,7 @@ func taskCreateFn(cmd *cobra.Command, args []string) error {
 	tasks, err := config.LoadFromDirsOrFiles(args)
 	if err != nil {
 		ShowError(err)
+		return nil
 	}
 	// TODO: enqueue tasks
 	_ = tasks
