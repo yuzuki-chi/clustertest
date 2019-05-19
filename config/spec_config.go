@@ -12,7 +12,7 @@ type SpecLoader func(json []byte) (models.Spec, error)
 
 type SpecConfig struct {
 	Type models.SpecType
-	Data interface{}
+	Data map[string]interface{}
 }
 
 func (c *SpecConfig) Load() (models.Spec, error) {

@@ -37,7 +37,7 @@ func TestSpecConfig_Load(t *testing.T) {
 
 		c = &SpecConfig{
 			Type: models.SpecType("empty"),
-			Data: map[string]string{},
+			Data: map[string]interface{}{},
 		}
 		spec, err = c.Load()
 		assert.IsType(t, &testSpec{}, spec)
