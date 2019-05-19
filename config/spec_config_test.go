@@ -17,7 +17,7 @@ func TestSpecConfig_Load(t *testing.T) {
 		assert.EqualError(t, err, "unsupported spec type: invalid-type")
 	})
 
-	t.Run("should_success_when_empty_spec", func(t *testing.T) {
+	t.Run("should_success_when_load_empty_spec", func(t *testing.T) {
 		RegisteredSpecLoaders["empty"] = func(js []byte) (models.Spec, error) {
 			assert.Contains(t, [][]byte{
 				[]byte("null"),
