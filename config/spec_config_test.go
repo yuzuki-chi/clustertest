@@ -7,7 +7,7 @@ import (
 )
 
 func TestSpecConfig_Load(t *testing.T) {
-	t.Run("use_unsupported_loader", func(t *testing.T) {
+	t.Run("should_return_an_error_when_load_unsupported_type", func(t *testing.T) {
 		c := &SpecConfig{
 			Type: models.SpecType("invalid-type"),
 			Data: nil,
@@ -17,7 +17,7 @@ func TestSpecConfig_Load(t *testing.T) {
 		assert.EqualError(t, err, "unsupported spec type: invalid-type")
 	})
 
-	t.Run("use_empty_loader", func(t *testing.T) {
+	t.Run("should_success_when_empty_spec", func(t *testing.T) {
 		RegisteredSpecLoaders["empty-loader"] = func(js []byte) (models.Spec, error) {
 			assert.Contains(t, [][]byte{
 				[]byte("null"),
