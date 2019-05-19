@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/yuuki0xff/clustertest/models"
 	"testing"
@@ -42,9 +43,37 @@ func TestSpecConfig_Load(t *testing.T) {
 		assert.IsType(t, &testSpec{}, spec)
 		assert.NoError(t, err)
 	})
+
+	t.Run("should_success_when_load_non_empty_spec", func(t *testing.T) {
+		RegisteredSpecLoaders[models.SpecType("testSpec")] = func(js []byte) (models.Spec, error) {
+			spec := &testSpec{}
+			err := json.Unmarshal(js, &spec)
+			return spec, err
+		}
+		c := SpecConfig{
+			Type: models.SpecType("testSpec"),
+			Data: map[string]interface{}{
+				"cluster_address": "cluster.local",
+				"token":           "invalid-token",
+				"nodes":           10,
+			},
+		}
+		spec, err := c.Load()
+		assert.NoError(t, err)
+		assert.IsType(t, &testSpec{}, spec)
+		assert.Equal(t, &testSpec{
+			ClusterAddress: "cluster.local",
+			Token:          "invalid-token",
+			Nodes:          10,
+		}, spec)
+	})
 }
 
-type testSpec struct{}
+type testSpec struct {
+	ClusterAddress string `json:"cluster_address"`
+	Token          string
+	Nodes          int
+}
 
 func (*testSpec) String() string {
 	return "testSpec"
