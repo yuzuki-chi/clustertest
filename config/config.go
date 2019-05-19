@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/yuuki0xff/clustertest/models"
-	"gopkg.in/yaml.v2"
+	"github.com/yuuki0xff/yaml"
 )
 
 type Config struct {
