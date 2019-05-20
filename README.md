@@ -21,7 +21,7 @@ $ go get -u github.com/yuuki0xff/clustertest/cmd/clustertestd
 
 ## Example
 ```bash
-$ clustertest job create hello-world.clustertest.conf
+$ clustertest job create hello-world.clustertest.yaml
 $ clustertest job wait hello-world
 $ clustertest job output hello-world
 hello world
