@@ -32,3 +32,13 @@ func RunCommand(command *cobra.Command) int {
 func ShowError(err error) {
 	fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
 }
+
+func HandlePanic(fn func() error) (err error) {
+	defer func() {
+		if obj := recover(); obj != nil {
+			err = obj.(error)
+		}
+	}()
+	err = fn()
+	return
+}
