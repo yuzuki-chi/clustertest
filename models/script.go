@@ -10,6 +10,12 @@ const NO_EXIT_CODE = int(math.MaxInt32)
 
 type ScriptType string
 
+type ScriptSet struct {
+	Before Script
+	Main   Script
+	After  Script
+}
+
 // Script represents contents of execution task.
 // For example, this script contains shell script, ansible playbook, etc.
 type Script interface {

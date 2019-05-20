@@ -1,7 +1,6 @@
 package config
 
 import (
-	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/yuuki0xff/clustertest/models"
 	"testing"
@@ -28,53 +27,69 @@ spec:
 version: 1
 name: test_config
 `))
-		assert.EqualError(t, err, "the Config.Spec is empty")
+		assert.EqualError(t, err, "the Config.Specs is empty")
 		assert.Nil(t, conf)
 	})
 
 	t.Run("should_success_when_loading a_valid_config", func(t *testing.T) {
-		RegisteredSpecLoaders[models.SpecType("fake_spec")] = fakeSpecLoader
-		RegisteredScriptLoaders[models.ScriptType("fake_script")] = fakeScriptLoader
 		conf, err := LoadFromBytes([]byte(`
 version: 1
 name: test_config
-spec:
-  type: fake_spec
+specs:
+- type: fake_spec
   fake_field1: foo
   fake_field2: bar
   nested:
     nested_field1: baz
-scripts:
-  main:
-    type: fake_script
-    fake_field1: a
-    fake_field2: b
-    nested:
-      nested_field1: c
+  scripts:
+    main:
+      type: fake_script
+      fake_field1: a
+      fake_field2: b
+      nested:
+        nested_field1: c
 `))
-		assert.NoError(t, err)
-		assert.NotNil(t, conf)
-		assert.Equal(t, "foo", conf.Spec().(*fakeSpec).FakeField1)
-		assert.Equal(t, "bar", conf.Spec().(*fakeSpec).FakeField2)
-		assert.Equal(t, "baz", conf.Spec().(*fakeSpec).Nested.NestedField1)
-		assert.Equal(t, "a", conf.Script().(*fakeScript).FakeField1)
-		assert.Equal(t, "b", conf.Script().(*fakeScript).FakeField2)
-		assert.Equal(t, "c", conf.Script().(*fakeScript).Nested.NestedField1)
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.NotNil(t, conf) {
+			return
+		}
+		specs := conf.Specs()
+		if !assert.Len(t, specs, 1) {
+			return
+		}
+
+		if !assert.IsType(t, &fakeSpec{}, specs[0]) {
+			return
+		}
+		f := specs[0].(*fakeSpec)
+		assert.Equal(t, "foo", f.FakeField1)
+		assert.Equal(t, "bar", f.FakeField2)
+		assert.Equal(t, "baz", f.Nested.NestedField1)
+
+		if !assert.IsType(t, &fakeScript{}, f.Scripts.Main.Data) {
+			return
+		}
+		s := f.Scripts.Main.Data.(*fakeScript)
+		assert.Equal(t, "a", s.FakeField1)
+		assert.Equal(t, "b", s.FakeField2)
+		assert.Equal(t, "c", s.Nested.NestedField1)
 	})
 }
 
-func fakeSpecLoader(js []byte) (models.Spec, error) {
-	s := &fakeSpec{}
-	err := json.Unmarshal(js, s)
-	return s, err
+func init() {
+	SpecInitializers[models.SpecType("fake_spec")] = func() models.Spec { return &fakeSpec{} }
+	ScriptInitializers[models.ScriptType("fake_script")] = func() models.Script { return &fakeScript{} }
 }
 
 type fakeSpec struct {
-	FakeField1 string `json:"fake_field1"`
-	FakeField2 string `json:"fake_field2"`
+	FakeField1 string `yaml:"fake_field1"`
+	FakeField2 string `yaml:"fake_field2"`
 	Nested     struct {
-		NestedField1 string `json:"nested_field1"`
+		NestedField1 string `yaml:"nested_field1"`
 	}
+	Scripts *ScriptConfigSet
 }
 
 func (s *fakeSpec) String() string {
@@ -84,17 +99,11 @@ func (*fakeSpec) Type() models.SpecType {
 	return models.SpecType("fake_spec")
 }
 
-func fakeScriptLoader(js []byte) (models.Script, error) {
-	s := &fakeScript{}
-	err := json.Unmarshal(js, s)
-	return s, err
-}
-
 type fakeScript struct {
-	FakeField1 string `json:"fake_field1"`
-	FakeField2 string `json:"fake_field2"`
+	FakeField1 string `yaml:"fake_field1"`
+	FakeField2 string `yaml:"fake_field2"`
 	Nested     struct {
-		NestedField1 string `json:"nested_field1"`
+		NestedField1 string `yaml:"nested_field1"`
 	}
 }
 

@@ -1,83 +1,77 @@
 package config
 
 import (
-	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/yuuki0xff/clustertest/models"
+	"github.com/yuuki0xff/yaml"
 	"testing"
 )
 
 func TestSpecConfig_Load(t *testing.T) {
 	t.Run("should_return_an_error_when_load_unsupported_type", func(t *testing.T) {
-		c := &SpecConfig{
-			Type: models.SpecType("invalid-type"),
-			Data: nil,
-		}
-		spec, err := c.Load()
-		assert.Nil(t, spec)
-		assert.EqualError(t, err, "unsupported spec type: invalid-type")
+		c := &SpecConfig{}
+		data := []byte(`
+type: invalid-type
+extra: fields
+`)
+
+		err := yaml.Unmarshal(data, c)
+		assert.EqualError(t, err, "unsupported type: invalid-type")
+		assert.Nil(t, c.Data)
 	})
 
 	t.Run("should_success_when_load_empty_spec", func(t *testing.T) {
-		RegisteredSpecLoaders["empty"] = func(js []byte) (models.Spec, error) {
-			assert.Contains(t, [][]byte{
-				[]byte("null"),
-				[]byte("{}"),
-			}, js)
-			return &testSpec{}, nil
-		}
-
-		c := &SpecConfig{
-			Type: models.SpecType("empty"),
-			Data: nil,
-		}
-		spec, err := c.Load()
-		assert.IsType(t, &testSpec{}, spec)
+		c := &SpecConfig{}
+		data := []byte(`
+type: empty
+`)
+		err := yaml.Unmarshal(data, c)
 		assert.NoError(t, err)
-
-		c = &SpecConfig{
-			Type: models.SpecType("empty"),
-			Data: map[string]interface{}{},
-		}
-		spec, err = c.Load()
-		assert.IsType(t, &testSpec{}, spec)
-		assert.NoError(t, err)
+		assert.IsType(t, &emptySpec{}, c.Data)
 	})
 
 	t.Run("should_success_when_load_non_empty_spec", func(t *testing.T) {
-		RegisteredSpecLoaders[models.SpecType("testSpec")] = func(js []byte) (models.Spec, error) {
-			spec := &testSpec{}
-			err := json.Unmarshal(js, &spec)
-			return spec, err
-		}
-		c := SpecConfig{
-			Type: models.SpecType("testSpec"),
-			Data: map[string]interface{}{
-				"cluster_address": "cluster.local",
-				"token":           "invalid-token",
-				"nodes":           10,
-			},
-		}
-		spec, err := c.Load()
+		c := &SpecConfig{}
+		data := []byte(`
+type: test
+cluster_address: cluster.local
+token: invalid-token
+nodes: 10
+`)
+		err := yaml.Unmarshal(data, c)
 		assert.NoError(t, err)
-		assert.IsType(t, &testSpec{}, spec)
+		assert.IsType(t, &testSpec{}, c.Data)
 		assert.Equal(t, &testSpec{
 			ClusterAddress: "cluster.local",
 			Token:          "invalid-token",
 			Nodes:          10,
-		}, spec)
+		}, c.Data)
 	})
 }
 
+func init() {
+	SpecInitializers[models.SpecType("empty")] = func() models.Spec { return &emptySpec{} }
+	SpecInitializers[models.SpecType("test")] = func() models.Spec { return &testSpec{} }
+}
+
+type emptySpec struct{}
+
+func (*emptySpec) String() string {
+	return "empty"
+}
+func (*emptySpec) Type() models.SpecType {
+	return models.SpecType("empty")
+}
+
 type testSpec struct {
-	ClusterAddress string `json:"cluster_address"`
+	ClusterAddress string `yaml:"cluster_address"`
 	Token          string
 	Nodes          int
 }
 
 func (*testSpec) String() string {
-	return "testSpec"
+	return "test"
 }
 func (*testSpec) Type() models.SpecType {
-	return models.SpecType("testSpec")
+	return models.SpecType("test")
 }

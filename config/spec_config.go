@@ -1,32 +1,29 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/yuuki0xff/clustertest/cmdutils"
 	"github.com/yuuki0xff/clustertest/models"
 )
 
-var RegisteredSpecLoaders = map[models.SpecType]SpecLoader{}
+var SpecInitializers = map[models.SpecType]SpecInitializer{}
 
-type SpecLoader func(json []byte) (models.Spec, error)
+type SpecInitializer func() models.Spec
 
 type SpecConfig struct {
 	Type models.SpecType
-	Data map[string]interface{} `yaml:",inline"`
+	Data models.Spec
 }
 
-func (c *SpecConfig) Load() (models.Spec, error) {
-	fn := RegisteredSpecLoaders[c.Type]
-	if fn == nil {
-		return nil, fmt.Errorf("unsupported spec type: %s", c.Type)
-	}
-	b, err := json.Marshal(c.Data)
-	if err != nil {
-		panic(err)
-	}
-	return fn(b)
-}
-func (c *SpecConfig) Validate() bool {
-	_, err := c.Load()
-	return err == nil
+func (c *SpecConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return cmdutils.UnmarshalYAMLInterface(unmarshal, func(typeName string) (concrete interface{}, err error) {
+		t := models.SpecType(typeName)
+		fn, ok := SpecInitializers[t]
+		if ok {
+			c.Type = t
+			c.Data = fn()
+			return c.Data, nil
+		}
+		return nil, fmt.Errorf("unsupported type: %s", typeName)
+	})
 }

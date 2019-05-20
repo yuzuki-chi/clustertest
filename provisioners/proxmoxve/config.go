@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	config.RegisteredSpecLoaders[models.SpecType("proxmox-ve")] = ProxmoxVESpecLoader
+	config.SpecInitializers[models.SpecType("proxmox-ve")] = func() models.Spec { return &ProxmoxVESpec{} }
 }
 func ProxmoxVESpecLoader(js []byte) (models.Spec, error) {
 	spec := &ProxmoxVESpec{}

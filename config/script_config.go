@@ -1,39 +1,35 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/yuuki0xff/clustertest/cmdutils"
 	"github.com/yuuki0xff/clustertest/models"
 )
 
-var RegisteredScriptLoaders = map[models.ScriptType]ScriptLoader{}
+var ScriptInitializers = map[models.ScriptType]ScriptInitializer{}
 
-type ScriptLoader func(json []byte) (models.Script, error)
+type ScriptInitializer func() models.Script
+
+type ScriptConfigSet struct {
+	Before ScriptConfig
+	Main   ScriptConfig
+	After  ScriptConfig
+}
 
 type ScriptConfig struct {
 	Type models.ScriptType
-	Data map[string]interface{} `yaml:",inline"`
+	Data models.Script
 }
 
-func (c *ScriptConfig) Load() (models.Script, error) {
-	fn := RegisteredScriptLoaders[c.Type]
-	if fn == nil {
-		return nil, fmt.Errorf("unsupported script type: %s", c.Type)
-	}
-	b, err := json.Marshal(c.Data)
-	if err != nil {
-		panic(err)
-	}
-	return fn(b)
-}
-func (c *ScriptConfig) MustLoad() models.Script {
-	s, err := c.Load()
-	if err != nil {
-		panic(err)
-	}
-	return s
-}
-func (c *ScriptConfig) Validate() bool {
-	_, err := c.Load()
-	return err == nil
+func (c *ScriptConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return cmdutils.UnmarshalYAMLInterface(unmarshal, func(typeName string) (concrete interface{}, err error) {
+		t := models.ScriptType(typeName)
+		fn, ok := ScriptInitializers[t]
+		if ok {
+			c.Type = t
+			c.Data = fn()
+			return c.Data, nil
+		}
+		return nil, fmt.Errorf("unsupported type: %s", typeName)
+	})
 }
