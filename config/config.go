@@ -7,6 +7,10 @@ import (
 	"github.com/yuuki0xff/yaml"
 )
 
+// TODO: specは複数指定できたほうが良い。
+// TODO: VM毎に異なるscriptを指定できるようにしたい。
+// TODO: 異なる構成のインスタンスを作成できるようにした。
+// TODO: 複数のprovisionerを同時に使いたい。例えば、pveとgcpを同時に使うとか。
 type Config struct {
 	Version int
 	Name    string
