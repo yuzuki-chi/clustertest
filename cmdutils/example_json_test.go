@@ -43,7 +43,7 @@ func ExampleUnmarshalJSONInterface() {
 	}
 
 	fmt.Println(reflect.TypeOf(foo.Bar.Data))
-	fmt.Printf("%+v\n",foo.Bar.Data)
+	fmt.Printf("%+v\n", foo.Bar.Data)
 	// Output:
 	// *cmdutils.Concrete1
 	// &{C1:ok}
