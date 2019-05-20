@@ -1,7 +1,6 @@
 package proxmoxve
 
 import (
-	"encoding/json"
 	"github.com/yuuki0xff/clustertest/config"
 	"github.com/yuuki0xff/clustertest/models"
 )
@@ -9,15 +8,10 @@ import (
 func init() {
 	config.SpecInitializers[models.SpecType("proxmox-ve")] = func() models.Spec { return &ProxmoxVESpec{} }
 }
-func ProxmoxVESpecLoader(js []byte) (models.Spec, error) {
-	spec := &ProxmoxVESpec{}
-	err := json.Unmarshal(js, spec)
-	return spec, err
-}
 
 type ProxmoxVESpec struct {
-	// Proxmox
-	Proxmox struct {
+	// Proxmox VE account settings..
+	Proxmox *struct {
 		// IP address or FQDN of the Proxmox VE API server.
 		Address string
 		Account struct {
@@ -30,28 +24,32 @@ type ProxmoxVESpec struct {
 		Fingerprint string
 	}
 	// Addresses to assign to VMs.
-	AddressPools []struct {
-		StartAddress string
-		EndAddress   string
+	AddressPools []*struct {
+		StartAddress string `yaml:"start_address"`
+		EndAddress   string `yaml:"end_address"`
 		CIDR         int
 		Gateway      string
 	}
 	// User information.
 	// This user will create by cloud-init at VM start-up.
-	User struct {
+	User *struct {
 		User         string
 		Password     string
-		SSHPublicKey string
+		SSHPublicKey string `yaml:"ssh_public_key"`
 	}
-	// Number of VMs.
-	Nodes int
-	// Number of processors.
-	Processors int
-	// RAM size (GiB).
-	MemorySize int
-	// Minimal storage size (GiB).
-	// The storage may be large than specified size.
-	StorageSize int
+	VMs []*struct {
+		// Template name.
+		Template string
+		// Number of VMs.
+		Nodes int
+		// Number of processors.
+		Processors int
+		// RAM size (GiB).
+		MemorySize int `yaml:"memory_size"`
+		// Minimal storage size (GiB).
+		// The storage may be large than specified size.
+		StorageSize int `yaml:"storage_size"`
+	}
 }
 
 func (s *ProxmoxVESpec) String() string {
