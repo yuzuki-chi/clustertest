@@ -20,8 +20,7 @@ type PveSpec struct {
 			Password string
 		}
 		// Fingerprint of the Proxmox VE API server.
-		// If you need the server public key pinning to make it more secure.
-		// TODO: https://medium.com/@zmanian/server-public-key-pinning-in-go-7a57bbe39438
+		// If you need the server certificate pinning to make it more secure.
 		Fingerprint string
 	}
 	// Addresses to assign to VMs.

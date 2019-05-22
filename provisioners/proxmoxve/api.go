@@ -4,8 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"crypto/tls"
-	"crypto/x509"
-	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"github.com/levigross/grequests"
 	"github.com/pkg/errors"
@@ -207,7 +206,7 @@ func (c *PveClient) httpClient() *http.Client {
 	if c._httpClient == nil {
 		c._httpClient = &http.Client{}
 		if c.Fingerprint != "" {
-			binaryFingerprint, err := base64.StdEncoding.DecodeString(c.Fingerprint)
+			binaryFingerprint, err := hex2bin(c.Fingerprint)
 			if err != nil {
 				panic(errors.Wrap(err, "invalid fingerprint"))
 			}
@@ -231,11 +230,7 @@ func makeDialer(fingerprint []byte, skipCAVerification bool) Dialer {
 		}
 		connstate := c.ConnectionState()
 		for _, peercert := range connstate.PeerCertificates {
-			der, err := x509.MarshalPKIXPublicKey(peercert.PublicKey)
-			hash := sha256.Sum256(der)
-			if err != nil {
-				return nil, err
-			}
+			hash := sha256.Sum256(peercert.Raw)
 			if bytes.Compare(hash[0:], fingerprint) == 0 {
 				// Pinned key found.
 				return c, nil
@@ -243,4 +238,8 @@ func makeDialer(fingerprint []byte, skipCAVerification bool) Dialer {
 		}
 		return nil, fmt.Errorf("pinned key not found: %s", fingerprint)
 	}
+}
+func hex2bin(s string) ([]byte, error) {
+	s = strings.ReplaceAll(s, ":", "")
+	return hex.DecodeString(s)
 }
