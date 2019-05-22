@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/yuuki0xff/clustertest/cmdutils"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
 	"strings"
@@ -77,6 +78,31 @@ func (c *PveClient) IDFromName(name string) (NodeVMID, error) {
 		}
 	}
 	return NodeVMID{}, errors.Errorf("not found VM: name=%+v", name)
+}
+
+// RandomVMID returns an unused VMID.
+func (c *PveClient) RandomVMID() (VMID, error) {
+	usedIDs := map[VMID]struct{}{}
+
+	// Load all VMIDs and fill usedIDs.
+	vms, err := c.ListAllVMs()
+	if err != nil {
+		return VMID(""), err
+	}
+	for _, v := range vms {
+		usedIDs[v.ID.VMID] = struct{}{}
+	}
+
+	// Find the unused VMID.
+	maxTries := 10000
+	for i := 0; i < maxTries; i++ {
+		vmid := VMID(fmt.Sprint(rand.Int()))
+		_, used := usedIDs[vmid]
+		if !used {
+			return vmid, nil
+		}
+	}
+	return VMID(""), errors.New("RandomVMID: not found the unused VMID")
 }
 
 // CloneVM creates a copy of virtual machine/template.
