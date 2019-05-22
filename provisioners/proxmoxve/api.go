@@ -65,6 +65,20 @@ func (c *PveClient) Ticket() error {
 	})
 }
 
+// IDFromName finds an VM with the given name and returns an ID.
+func (c *PveClient) IDFromName(name string) (NodeVMID, error) {
+	vms, err := c.ListAllVMs()
+	if err != nil {
+		return NodeVMID{}, err
+	}
+	for _, v := range vms {
+		if v.Name == name {
+			return v.ID, nil
+		}
+	}
+	return NodeVMID{}, errors.Errorf("not found VM: name=%+v", name)
+}
+
 // CloneVM creates a copy of virtual machine/template.
 func (c *PveClient) CloneVM(from, to NodeVMID, name, description string) error {
 	return cmdutils.HandlePanic(func() error {
