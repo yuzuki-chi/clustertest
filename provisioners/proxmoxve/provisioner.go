@@ -19,16 +19,18 @@ type PveProvisioner struct {
 }
 
 func (p *PveProvisioner) Create() error {
-	// todo: get token
+	// todo: get client
 	// todo: create resources
 	// todo: check resource status
 	// todo: update infra config
+	panic("not implemented")
 }
 func (p *PveProvisioner) Delete() error {
-	// todo: get token
+	// todo: get client
 	// todo: delete resources
 	// todo: check resource status
 	// todo: update infra config
+	panic("not implemented")
 
 }
 func (p *PveProvisioner) Spec() models.Spec {
@@ -36,6 +38,7 @@ func (p *PveProvisioner) Spec() models.Spec {
 }
 func (p *PveProvisioner) Config() models.InfraConfig {
 	// todo
+	panic("not implemented")
 }
 func (p *PveProvisioner) ScriptExecutor(scriptType models.ScriptType) models.ScriptExecutor {
 	switch scriptType {
@@ -45,5 +48,15 @@ func (p *PveProvisioner) ScriptExecutor(scriptType models.ScriptType) models.Scr
 		// todo: use default impl
 	default:
 		// todo: not implemented
+	}
+	panic("not implemented")
+}
+func (p *PveProvisioner) client() *PveClient {
+	px := p.spec.Proxmox
+	return &PveClient{
+		Address:     px.Address,
+		User:        px.Account.User,
+		Password:    px.Account.Password,
+		Fingerprint: px.Fingerprint,
 	}
 }
