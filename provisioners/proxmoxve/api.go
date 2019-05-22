@@ -45,9 +45,9 @@ func (c *PveClient) Ticket() error {
 			Password string `url:"password"`
 		}{c.User, c.Password}
 		token := &apiToken{}
-		data := &struct{ Data *apiToken }{token}
+		data := struct{ Data *apiToken }{token}
 
-		err := c.reqJSON("POST", "/api2/json/access/ticket", query, data)
+		err := c.reqJSON("POST", "/api2/json/access/ticket", query, &data)
 		if err != nil {
 			return err
 		}
@@ -94,7 +94,9 @@ func (c *PveClient) ListNodes() ([]NodeID, error) {
 		var nodesInfo []struct {
 			Node NodeID
 		}
-		err := c.reqJSON("GET", "/api2/json/nodes", nil, &nodesInfo)
+		data := struct{ Data interface{} }{&nodesInfo}
+
+		err := c.reqJSON("GET", "/api2/json/nodes", nil, &data)
 		if err != nil {
 			return err
 		}
@@ -119,8 +121,9 @@ func (c *PveClient) ListVMs(nodeID NodeID) ([]NodeVMID, error) {
 		var vmsInfo []struct {
 			VMID VMID `json:"vmid"`
 		}
+		data := struct{ Data interface{} }{&vmsInfo}
 
-		err := c.reqJSON("GET", url, nil, &vmsInfo)
+		err := c.reqJSON("GET", url, nil, &data)
 		if err != nil {
 			return err
 		}
