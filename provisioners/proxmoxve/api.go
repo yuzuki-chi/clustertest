@@ -9,6 +9,7 @@ import (
 	"github.com/levigross/grequests"
 	"github.com/pkg/errors"
 	"github.com/yuuki0xff/clustertest/cmdutils"
+	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -199,6 +200,7 @@ func (c *PveClient) reqJSON(method, path string, query, js interface{}) error {
 		return err
 	}
 
+	log.Println(r.String())
 	err = r.JSON(js)
 	if err != nil {
 		return errors.Wrap(err, "failed to unmarshal")
@@ -280,4 +282,8 @@ func makeDialer(fingerprint []byte, skipCAVerification bool) Dialer {
 func hex2bin(s string) ([]byte, error) {
 	s = strings.ReplaceAll(s, ":", "")
 	return hex.DecodeString(s)
+}
+
+func (i *VMInfo) String() string {
+	return fmt.Sprintf(`<VMInfo id=%+v name="%s">`, i.ID, i.Name)
 }
