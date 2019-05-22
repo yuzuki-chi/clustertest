@@ -12,7 +12,8 @@ func init() {
 type PveSpec struct {
 	// Proxmox VE account settings..
 	Proxmox *struct {
-		// IP address or FQDN of the Proxmox VE API server.
+		// URL of the Proxmox VE API server.
+		// Example: https://pve.local:8006
 		Address string
 		Account struct {
 			User     string
