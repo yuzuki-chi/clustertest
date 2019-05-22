@@ -194,6 +194,8 @@ func (c *PveClient) ro(path string, query interface{}) (string, *grequests.Reque
 	ro := &grequests.RequestOptions{
 		QueryStruct: query,
 		UserAgent:   "clustertest-proxmox-ve-provisioner",
+		Cookies:     c.cookies(),
+		Headers:     c.headers(),
 		HTTPClient:  c.httpClient(),
 	}
 	return url, ro
@@ -202,6 +204,22 @@ func (c *PveClient) buildUrl(path string) string {
 	urlL := strings.TrimRight(c.Address, "/")
 	urlR := strings.TrimLeft(path, "/")
 	return urlL + "/" + urlR
+}
+func (c *PveClient) cookies() []*http.Cookie {
+	if c.token == nil {
+		return nil
+	}
+	return []*http.Cookie{
+		{Name: "PVEAuthCookie", Value: c.token.Ticket},
+	}
+}
+func (c *PveClient) headers() map[string]string {
+	if c.token == nil {
+		return nil
+	}
+	return map[string]string{
+		"CSRFPreventionToken": c.token.CSRFPreventionToken,
+	}
 }
 func (c *PveClient) httpClient() *http.Client {
 	if c._httpClient == nil {
