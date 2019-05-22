@@ -6,10 +6,10 @@ import (
 )
 
 func init() {
-	config.SpecInitializers[models.SpecType("proxmox-ve")] = func() models.Spec { return &ProxmoxVESpec{} }
+	config.SpecInitializers[models.SpecType("proxmox-ve")] = func() models.Spec { return &PveSpec{} }
 }
 
-type ProxmoxVESpec struct {
+type PveSpec struct {
 	// Proxmox VE account settings..
 	Proxmox *struct {
 		// IP address or FQDN of the Proxmox VE API server.
@@ -54,11 +54,9 @@ type ProxmoxVESpec struct {
 	}
 }
 
-func (s *ProxmoxVESpec) String() string {
-	return "<ProxmoxVESpec>"
+func (s *PveSpec) String() string {
+	return "<PveSpec>"
 }
-func (s *ProxmoxVESpec) Type() models.SpecType {
+func (s *PveSpec) Type() models.SpecType {
 	return models.SpecType("proxmox-ve")
 }
-
-// TODO: write the provisioning logic.
