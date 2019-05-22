@@ -49,6 +49,8 @@ type ProxmoxVESpec struct {
 		// Minimal storage size (GiB).
 		// The storage may be large than specified size.
 		StorageSize int `yaml:"storage_size"`
+		// Define tasks to execute on VMs.
+		Scripts *config.ScriptConfig
 	}
 }
 
