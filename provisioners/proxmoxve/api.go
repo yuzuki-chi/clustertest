@@ -41,8 +41,8 @@ type NodeVMID struct {
 func (c *PveClient) Ticket() error {
 	return cmdutils.HandlePanic(func() error {
 		query := struct {
-			Username string
-			Password string
+			Username string `url:"username"`
+			Password string `url:"password"`
 		}{c.User, c.Password}
 		token := &apiToken{}
 
@@ -61,11 +61,11 @@ func (c *PveClient) CloneVM(from, to NodeVMID, name, description string) error {
 		query := struct {
 			NewVMID     VMID   `url:"newid"`
 			TargetNode  NodeID `url:"target"`
-			Node        NodeID
-			VMID        VMID `url:"vmid"`
-			Full        bool
-			Name        string
-			Description string
+			Node        NodeID `url:"node"`
+			VMID        VMID   `url:"vmid"`
+			Full        bool   `url:"full"`
+			Name        string `url:"name"`
+			Description string `url:"description"`
 		}{
 			NewVMID:     to.VMID,
 			TargetNode:  to.NodeID,
