@@ -18,26 +18,26 @@ type PveProvisioner struct {
 	config models.InfraConfig // 具体的な型を入れる
 }
 
-func (s *PveProvisioner) Create() error {
+func (p *PveProvisioner) Create() error {
 	// todo: get token
 	// todo: create resources
 	// todo: check resource status
 	// todo: update infra config
 }
-func (s *PveProvisioner) Delete() error {
+func (p *PveProvisioner) Delete() error {
 	// todo: get token
 	// todo: delete resources
 	// todo: check resource status
 	// todo: update infra config
 
 }
-func (s *PveProvisioner) Spec() models.Spec {
-	return s.spec
+func (p *PveProvisioner) Spec() models.Spec {
+	return p.spec
 }
-func (s *PveProvisioner) Config() models.InfraConfig {
+func (p *PveProvisioner) Config() models.InfraConfig {
 	// todo
 }
-func (s *PveProvisioner) ScriptExecutor(scriptType models.ScriptType) models.ScriptExecutor {
+func (p *PveProvisioner) ScriptExecutor(scriptType models.ScriptType) models.ScriptExecutor {
 	switch scriptType {
 	case models.ScriptType("remote-exec"):
 		// todo: use default impl
