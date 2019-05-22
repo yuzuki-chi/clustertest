@@ -34,6 +34,14 @@ type NodeVMID struct {
 	NodeID NodeID
 	VMID   VMID
 }
+type VMInfo struct {
+	ID   NodeVMID
+	Name string
+	// Maximum usable CPUs.
+	Cpus int
+	// Maximum memory in bytes.
+	Mem int
+}
 
 // todo: add some methods
 
@@ -113,13 +121,16 @@ func (c *PveClient) ListNodes() ([]NodeID, error) {
 	return nodes, nil
 }
 
-// ListVMs returns all NodeVMIDs in the specified node.
-func (c *PveClient) ListVMs(nodeID NodeID) ([]NodeVMID, error) {
-	var ids []NodeVMID
+// ListVMs returns information of all VMs in the specified node.
+func (c *PveClient) ListVMs(nodeID NodeID) ([]*VMInfo, error) {
+	var ids []*VMInfo
 	err := cmdutils.HandlePanic(func() error {
 		url := fmt.Sprintf("/api2/json/nodes/%s/qemu", nodeID)
 		var vmsInfo []struct {
-			VMID VMID `json:"vmid"`
+			VMID   VMID `json:"vmid"`
+			Name   string
+			Cpus   int
+			Maxmem int
 		}
 		data := struct{ Data interface{} }{&vmsInfo}
 
@@ -129,9 +140,14 @@ func (c *PveClient) ListVMs(nodeID NodeID) ([]NodeVMID, error) {
 		}
 
 		for _, v := range vmsInfo {
-			ids = append(ids, NodeVMID{
-				NodeID: nodeID,
-				VMID:   v.VMID,
+			ids = append(ids, &VMInfo{
+				ID: NodeVMID{
+					NodeID: nodeID,
+					VMID:   v.VMID,
+				},
+				Name: v.Name,
+				Cpus: v.Cpus,
+				Mem:  v.Cpus,
 			})
 		}
 		return nil
@@ -142,9 +158,9 @@ func (c *PveClient) ListVMs(nodeID NodeID) ([]NodeVMID, error) {
 	return ids, nil
 }
 
-// ListAllVMs returns all NodeVMIDs in the cluster.
-func (c *PveClient) ListAllVMs() ([]NodeVMID, error) {
-	var allvms []NodeVMID
+// ListAllVMs returns information of all VMs in the cluster.
+func (c *PveClient) ListAllVMs() ([]*VMInfo, error) {
+	var allvms []*VMInfo
 	err := cmdutils.HandlePanic(func() error {
 		nodes, err := c.ListNodes()
 		if err != nil {
