@@ -29,7 +29,7 @@ type apiToken struct {
 	Ticket              string
 }
 type NodeID string
-type VMID int
+type VMID string
 type NodeVMID struct {
 	NodeID NodeID
 	VMID   VMID
