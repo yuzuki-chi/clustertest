@@ -45,8 +45,9 @@ func (c *PveClient) Ticket() error {
 			Password string `url:"password"`
 		}{c.User, c.Password}
 		token := &apiToken{}
+		data := &struct{ Data *apiToken }{token}
 
-		err := c.reqJSON("POST", "/api2/json/access/ticket", query, token)
+		err := c.reqJSON("POST", "/api2/json/access/ticket", query, data)
 		if err != nil {
 			return err
 		}
