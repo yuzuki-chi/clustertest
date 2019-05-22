@@ -11,9 +11,9 @@ var ScriptInitializers = map[models.ScriptType]ScriptInitializer{}
 type ScriptInitializer func() models.Script
 
 type ScriptConfigSet struct {
-	Before ScriptConfig
-	Main   ScriptConfig
-	After  ScriptConfig
+	Before *ScriptConfig
+	Main   *ScriptConfig
+	After  *ScriptConfig
 }
 
 type ScriptConfig struct {
