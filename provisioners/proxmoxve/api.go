@@ -96,7 +96,7 @@ func (c *PveClient) RandomVMID() (VMID, error) {
 	// Find the unused VMID.
 	maxTries := 10000
 	for i := 0; i < maxTries; i++ {
-		vmid := VMID(fmt.Sprint(rand.Int()))
+		vmid := VMID(fmt.Sprint(rand.Int31()))
 		_, used := usedIDs[vmid]
 		if !used {
 			return vmid, nil
