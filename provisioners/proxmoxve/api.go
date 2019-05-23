@@ -125,6 +125,23 @@ func (c *PveClient) CloneVM(from, to NodeVMID, name, description string) error {
 	})
 }
 
+// ResizeVolume changes size of the disk.
+// The size parameter is in gigabytes.
+func (c *PveClient) ResizeVolume(id NodeVMID, disk string, size int) error {
+	return cmdutils.HandlePanic(func() error {
+		query := struct {
+			Disk string `url:"disk"`
+			Size string `url:"size"`
+		}{
+			Disk: disk,
+			Size: fmt.Sprintf("%dG", size),
+		}
+		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/resize", id.NodeID, id.VMID)
+		_, err := c.req("PUT", url, query)
+		return err
+	})
+}
+
 // ListNodes returns all NodeIDs in the cluster.
 func (c *PveClient) ListNodes() ([]NodeID, error) {
 	var nodes []NodeID
