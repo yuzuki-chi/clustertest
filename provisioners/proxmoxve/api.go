@@ -111,17 +111,11 @@ func (c *PveClient) CloneVM(from, to NodeVMID, name, description string) error {
 		query := struct {
 			NewVMID     VMID   `url:"newid"`
 			TargetNode  NodeID `url:"target"`
-			Node        NodeID `url:"node"`
-			VMID        VMID   `url:"vmid"`
-			Full        bool   `url:"full"`
 			Name        string `url:"name"`
 			Description string `url:"description"`
 		}{
 			NewVMID:     to.VMID,
 			TargetNode:  to.NodeID,
-			Node:        from.NodeID,
-			VMID:        from.VMID,
-			Full:        false,
 			Name:        name,
 			Description: description,
 		}
