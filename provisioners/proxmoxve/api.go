@@ -121,10 +121,7 @@ func (c *PveClient) CloneVM(from, to NodeVMID, name, description string) error {
 		}
 		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/clone", from.NodeID, from.VMID)
 		_, err := c.req("POST", url, query)
-		if err != nil {
-			return err
-		}
-		return nil
+		return err
 	})
 }
 
