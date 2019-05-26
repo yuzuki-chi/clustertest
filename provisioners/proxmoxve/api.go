@@ -45,6 +45,21 @@ type VMInfo struct {
 	// Maximum memory in bytes.
 	Mem int
 }
+type Config struct {
+	// CPU cores
+	CPUCores int `url:"cores" json:"cores"`
+	// CPU sockets
+	CPUSockets int `url:"sockets" json:"sockets"`
+	// Memory size in megabytes
+	Memory int `url:"memory" json:"memory"`
+	// Cloud-init: user name
+	User string `url:"ciuser" json:"ciuser"`
+	// Cloud-init: SSH public keys (url encoded)
+	SSHKeys string `url:"sshkeys" json:"sshkeys"`
+	// Cloud-init: static IP address configuration
+	// format: gw=<ipv4>,ip=<ipv4>/<CIDR>
+	IPAddress string `url:"ipconfig0" json:"ipconfig0"`
+}
 
 // todo: add some methods
 
@@ -141,6 +156,26 @@ func (c *PveClient) ResizeVolume(id NodeVMID, disk string, size int) error {
 		_, err := c.req("PUT", url, query, nil)
 		return err
 	})
+}
+
+// UpdateConfig updates configuration of the specified VM.
+func (c *PveClient) UpdateConfig(id NodeVMID, config *Config) error {
+	return cmdutils.HandlePanic(func() error {
+		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/config", id.NodeID, id.VMID)
+		_, err := c.req("PUT", url, config, nil)
+		return err
+	})
+}
+
+// Config returns current configuration of the specified VM.
+func (c *PveClient) Config(id NodeVMID) (*Config, error) {
+	conf := &Config{}
+	err := cmdutils.HandlePanic(func() error {
+		data := struct{ Data *Config }{conf}
+		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/config", id.NodeID, id.VMID)
+		return c.reqJSON("GET", url, nil, nil, &data)
+	})
+	return conf, err
 }
 
 // ListNodes returns all NodeIDs in the cluster.
