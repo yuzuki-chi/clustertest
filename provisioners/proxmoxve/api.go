@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/levigross/grequests"
 	"github.com/pkg/errors"
@@ -57,7 +58,7 @@ func (c *PveClient) Ticket() error {
 		token := &apiToken{}
 		data := struct{ Data *apiToken }{token}
 
-		err := c.reqJSON("POST", "/api2/json/access/ticket", query, &data)
+		err := c.reqJSON("POST", "/api2/json/access/ticket", query, nil, &data)
 		if err != nil {
 			return err
 		}
@@ -120,7 +121,7 @@ func (c *PveClient) CloneVM(from, to NodeVMID, name, description string) error {
 			Description: description,
 		}
 		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/clone", from.NodeID, from.VMID)
-		_, err := c.req("POST", url, query)
+		_, err := c.req("POST", url, query, nil)
 		return err
 	})
 }
@@ -137,7 +138,7 @@ func (c *PveClient) ResizeVolume(id NodeVMID, disk string, size int) error {
 			Size: fmt.Sprintf("%dG", size),
 		}
 		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/resize", id.NodeID, id.VMID)
-		_, err := c.req("PUT", url, query)
+		_, err := c.req("PUT", url, query, nil)
 		return err
 	})
 }
@@ -151,7 +152,7 @@ func (c *PveClient) ListNodes() ([]NodeID, error) {
 		}
 		data := struct{ Data interface{} }{&nodesInfo}
 
-		err := c.reqJSON("GET", "/api2/json/nodes", nil, &data)
+		err := c.reqJSON("GET", "/api2/json/nodes", nil, nil, &data)
 		if err != nil {
 			return err
 		}
@@ -181,7 +182,7 @@ func (c *PveClient) ListVMs(nodeID NodeID) ([]*VMInfo, error) {
 		}
 		data := struct{ Data interface{} }{&vmsInfo}
 
-		err := c.reqJSON("GET", url, nil, &data)
+		err := c.reqJSON("GET", url, nil, nil, &data)
 		if err != nil {
 			return err
 		}
@@ -229,8 +230,8 @@ func (c *PveClient) ListAllVMs() ([]*VMInfo, error) {
 	return allvms, nil
 }
 
-func (c *PveClient) req(method, path string, query interface{}) (*grequests.Response, error) {
-	url, option := c.ro(path, query)
+func (c *PveClient) req(method, path string, query interface{}, post interface{}) (*grequests.Response, error) {
+	url, option := c.ro(path, query, post)
 	r, err := grequests.DoRegularRequest(method, url, option)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to request")
@@ -240,8 +241,8 @@ func (c *PveClient) req(method, path string, query interface{}) (*grequests.Resp
 	}
 	return r, nil
 }
-func (c *PveClient) reqJSON(method, path string, query, js interface{}) error {
-	r, err := c.req(method, path, query)
+func (c *PveClient) reqJSON(method, path string, query, post, js interface{}) error {
+	r, err := c.req(method, path, query, post)
 	if err != nil {
 		return err
 	}
@@ -256,10 +257,11 @@ func (c *PveClient) reqJSON(method, path string, query, js interface{}) error {
 
 // ro built the RequestOptions.
 // If you don't need the query string, set query to nil.
-func (c *PveClient) ro(path string, query interface{}) (string, *grequests.RequestOptions) {
+func (c *PveClient) ro(path string, query interface{}, post interface{}) (string, *grequests.RequestOptions) {
 	url := c.buildUrl(path)
 	ro := &grequests.RequestOptions{
 		QueryStruct: query,
+		Data:        interface2mapString(post),
 		UserAgent:   "clustertest-proxmox-ve-provisioner",
 		Cookies:     c.cookies(),
 		Headers:     c.headers(),
@@ -332,4 +334,28 @@ func hex2bin(s string) ([]byte, error) {
 
 func (i *VMInfo) String() string {
 	return fmt.Sprintf(`<VMInfo id=%+v name="%s">`, i.ID, i.Name)
+}
+
+func interface2mapString(i interface{}) map[string]string {
+	var tmp map[string]interface{}
+	jsonCast(i, &tmp)
+
+	m := map[string]string{}
+	for key := range tmp {
+		value := fmt.Sprint(tmp[key])
+		m[key] = value
+	}
+	return m
+}
+
+func jsonCast(from interface{}, to interface{}) {
+	b, err := json.Marshal(from)
+	if err != nil {
+		panic(err)
+	}
+
+	err = json.Unmarshal(b, to)
+	if err != nil {
+		panic(err)
+	}
 }
