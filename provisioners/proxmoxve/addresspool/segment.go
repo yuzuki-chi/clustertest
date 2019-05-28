@@ -20,59 +20,59 @@ type segmentCursor struct {
 	allocated map[string]struct{}
 }
 
-func (p *segmentCursor) Init() {
-	network := p.ip2ipv4(p.StartAddress).network
-	if !network.Contains(p.Gateway) {
-		panic(errors.Errorf("the Gateway address is out of network: gw=%s network=%s", p.Gateway, network))
+func (c *segmentCursor) Init() {
+	network := c.ip2ipv4(c.StartAddress).network
+	if !network.Contains(c.Gateway) {
+		panic(errors.Errorf("the Gateway address is out of network: gw=%s network=%s", c.Gateway, network))
 	}
-	if !network.Contains(p.EndAddress) {
-		panic(errors.Errorf("the EndAddress is out of network: gw=%s network=%s", p.Gateway, network))
+	if !network.Contains(c.EndAddress) {
+		panic(errors.Errorf("the EndAddress is out of network: gw=%s network=%s", c.Gateway, network))
 	}
 
-	p.ipCursor = p.ip2ipv4(p.StartAddress)
-	p.allocated = map[string]struct{}{}
+	c.ipCursor = c.ip2ipv4(c.StartAddress)
+	c.allocated = map[string]struct{}{}
 }
 
 // Allocate allocates an IPv4 address and returns it by the pve-qm-ipconfig format.
 // If this address pool is full, Allocate returns empty string.
-func (p *segmentCursor) Allocate() string {
-	ip := p.findFreeAddress()
+func (c *segmentCursor) Allocate() string {
+	ip := c.findFreeAddress()
 	if ip == nil {
 		// full
 		return ""
 	}
-	return fmt.Sprintf("gw=%s,ip=%s/%d", p.Gateway, ip, p.Mask)
+	return fmt.Sprintf("gw=%s,ip=%s/%d", c.Gateway, ip, c.Mask)
 }
-func (p *segmentCursor) Free(ip net.IP) {
-	ipv4 := p.ip2ipv4(ip)
-	if !p.isUsedAddress(ipv4) {
+func (c *segmentCursor) Free(ip net.IP) {
+	ipv4 := c.ip2ipv4(ip)
+	if !c.isUsedAddress(ipv4) {
 		// Detected a bug.
 		panic(fmt.Errorf("not allocated ip: %s", ip))
 	}
-	delete(p.allocated, ipv4.String())
+	delete(c.allocated, ipv4.String())
 }
-func (p *segmentCursor) ip2ipv4(ip net.IP) *IPv4Address {
+func (c *segmentCursor) ip2ipv4(ip net.IP) *IPv4Address {
 	return newIPv4AddressByIP(
 		ip,
 		&net.IPNet{
-			IP:   p.StartAddress,
-			Mask: net.CIDRMask(int(p.Mask), 32),
+			IP:   c.StartAddress,
+			Mask: net.CIDRMask(int(c.Mask), 32),
 		},
 	)
 }
 
 // findFreeAddress finds non-allocated address and returns it.
-func (p *segmentCursor) findFreeAddress() net.IP {
-	loopStopIP := p.ipCursor
-	endIP := p.ip2ipv4(p.EndAddress)
-	cursor := p.ipCursor
+func (c *segmentCursor) findFreeAddress() net.IP {
+	loopStopIP := c.ipCursor
+	endIP := c.ip2ipv4(c.EndAddress)
+	cursor := c.ipCursor
 	for {
 		if !(cursor.IsNetwork() || cursor.IsBroadcast()) {
-			if !p.isUsedAddress(cursor) {
+			if !c.isUsedAddress(cursor) {
 				// It is usable address.
-				p.ipCursor = cursor
-				p.allocated[cursor.String()] = struct{}{}
-				return p.ipCursor.ip
+				c.ipCursor = cursor
+				c.allocated[cursor.String()] = struct{}{}
+				return c.ipCursor.ip
 			}
 		}
 
@@ -86,7 +86,7 @@ func (p *segmentCursor) findFreeAddress() net.IP {
 		if endIP.LargerThan(cursor) {
 			// Reached to end.
 			// Move the cursor to start address.
-			cursor = p.ip2ipv4(p.StartAddress)
+			cursor = c.ip2ipv4(c.StartAddress)
 		}
 
 		if loopStopIP.Equals(cursor) {
@@ -97,7 +97,7 @@ func (p *segmentCursor) findFreeAddress() net.IP {
 	}
 	panic("unreachable")
 }
-func (p *segmentCursor) isUsedAddress(address *IPv4Address) bool {
-	_, ok := p.allocated[address.String()]
+func (c *segmentCursor) isUsedAddress(address *IPv4Address) bool {
+	_, ok := c.allocated[address.String()]
 	return ok
 }
