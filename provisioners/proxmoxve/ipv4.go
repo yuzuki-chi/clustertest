@@ -46,6 +46,12 @@ func (a *IPv4Address) String() string {
 	}
 	return ipnet.String()
 }
+func (a *IPv4Address) LargerThan(address *IPv4Address) bool {
+	return a.toUint32() < address.toUint32()
+}
+func (a *IPv4Address) Equals(address *IPv4Address) bool {
+	return a.String() == address.String()
+}
 func (a *IPv4Address) Increase() (*IPv4Address, error) {
 	oldIPNumber := a.toUint32()
 	newIPNumber := oldIPNumber + 1
