@@ -4,6 +4,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/yuuki0xff/clustertest/models"
 	"github.com/yuuki0xff/clustertest/provisioners"
+	"github.com/yuuki0xff/clustertest/provisioners/proxmoxve/addresspool"
+	"net"
 )
 
 func init() {
@@ -27,6 +29,11 @@ func (p *PveProvisioner) Create() error {
 		return errors.Wrap(err, "failed to get Proxmox VE API ticket")
 	}
 
+	segs, err := p.segments()
+	if err != nil {
+		return err
+	}
+
 	// Create resources.
 	for _, vm := range p.spec.VMs {
 		from, err := c.IDFromName(vm.Template)
@@ -34,8 +41,8 @@ func (p *PveProvisioner) Create() error {
 			return errors.Wrapf(err, "not found template: %s", vm.Template)
 		}
 		for i := 0; i < vm.Nodes; i++ {
-			// TODO: get an address from address pools.
-			ip := ""
+			// Get an address from global address pool.
+			ip := addresspool.GlobalPool.Allocate(segs)
 			// TODO: decide node.
 			nodeID := NodeID("")
 
@@ -109,4 +116,29 @@ func (p *PveProvisioner) client() *PveClient {
 		Password:    px.Account.Password,
 		Fingerprint: px.Fingerprint,
 	}
+}
+func (p *PveProvisioner) segments() ([]addresspool.Segment, error) {
+	var segs []addresspool.Segment
+	for _, pconf := range p.spec.AddressPools {
+		start := net.ParseIP(pconf.StartAddress)
+		end := net.ParseIP(pconf.EndAddress)
+		gateway := net.ParseIP(pconf.Gateway)
+		if start == nil {
+			return nil, errors.Errorf("the StartAddress is invalid address: %s", pconf.StartAddress)
+		}
+		if end == nil {
+			return nil, errors.Errorf("the EndAddress is invalid address: %s", pconf.EndAddress)
+		}
+		if gateway == nil {
+			return nil, errors.Errorf("the Gateway is invalid address: %s", pconf.Gateway)
+		}
+
+		segs = append(segs, addresspool.Segment{
+			StartAddress: start,
+			EndAddress:   end,
+			Mask:         uint(pconf.CIDR),
+			Gateway:      gateway,
+		})
+	}
+	return segs, nil
 }
