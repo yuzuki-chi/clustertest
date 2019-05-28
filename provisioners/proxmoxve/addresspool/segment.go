@@ -6,7 +6,7 @@ import (
 	"net"
 )
 
-type PveAddressPool struct {
+type Segment struct {
 	StartAddress net.IP
 	EndAddress   net.IP
 	Mask         uint
@@ -16,7 +16,7 @@ type PveAddressPool struct {
 	allocated map[string]struct{}
 }
 
-func (p *PveAddressPool) Init() {
+func (p *Segment) Init() {
 	network := p.ip2ipv4(p.StartAddress).network
 	if !network.Contains(p.Gateway) {
 		panic(errors.Errorf("the Gateway address is out of network: gw=%s network=%s", p.Gateway, network))
@@ -31,7 +31,7 @@ func (p *PveAddressPool) Init() {
 
 // Allocate allocates an IPv4 address and returns it by the pve-qm-ipconfig format.
 // If this address pool is full, Allocate returns empty string.
-func (p *PveAddressPool) Allocate() string {
+func (p *Segment) Allocate() string {
 	ip := p.findFreeAddress()
 	if ip == nil {
 		// full
@@ -39,7 +39,7 @@ func (p *PveAddressPool) Allocate() string {
 	}
 	return fmt.Sprintf("gw=%s,ip=%s/%d", p.Gateway, ip, p.Mask)
 }
-func (p *PveAddressPool) Free(ip net.IP) {
+func (p *Segment) Free(ip net.IP) {
 	ipv4 := p.ip2ipv4(ip)
 	if !p.isUsedAddress(ipv4) {
 		// Detected a bug.
@@ -47,7 +47,7 @@ func (p *PveAddressPool) Free(ip net.IP) {
 	}
 	delete(p.allocated, ipv4.String())
 }
-func (p *PveAddressPool) ip2ipv4(ip net.IP) *IPv4Address {
+func (p *Segment) ip2ipv4(ip net.IP) *IPv4Address {
 	return newIPv4AddressByIP(
 		ip,
 		&net.IPNet{
@@ -58,7 +58,7 @@ func (p *PveAddressPool) ip2ipv4(ip net.IP) *IPv4Address {
 }
 
 // findFreeAddress finds non-allocated address and returns it.
-func (p *PveAddressPool) findFreeAddress() net.IP {
+func (p *Segment) findFreeAddress() net.IP {
 	loopStopIP := p.ipCursor
 	endIP := p.ip2ipv4(p.EndAddress)
 	cursor := p.ipCursor
@@ -93,7 +93,7 @@ func (p *PveAddressPool) findFreeAddress() net.IP {
 	}
 	panic("unreachable")
 }
-func (p *PveAddressPool) isUsedAddress(address *IPv4Address) bool {
+func (p *Segment) isUsedAddress(address *IPv4Address) bool {
 	_, ok := p.allocated[address.String()]
 	return ok
 }
