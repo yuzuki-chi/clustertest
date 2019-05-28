@@ -1,4 +1,4 @@
-package proxmoxve
+package addresspool
 
 import (
 	"github.com/stretchr/testify/assert"
