@@ -5,6 +5,9 @@ import (
 	"sync"
 )
 
+// 4096MiB = 4GiB
+const DEFAULT_SYSTEM_MEM = 4096
+
 type Node struct {
 	NodeID NodeID
 
@@ -27,7 +30,7 @@ type Node struct {
 	VMem struct {
 		// Amount of memory size (MiB) for system.
 		// This memory is used by Proxmox VE system and margin for prevent out-of-memory.
-		// Default: 4096 (4096MiB = 4GiB)
+		// Default: DEFAULT_SYSTEM_MEM
 		System int
 		// Amount of used memory size (MiB) by already running VMs.
 		// This value is the total of memory size each running VMs.
@@ -89,6 +92,14 @@ func (s *Scheduler) UpdateNodes(fn func() ([]*Node, error), updateReserved bool)
 				newNode.VMem.Reserved = 0
 				n = newNode
 			}
+		} else {
+			newNode := &Node{}
+			*newNode = *n
+			n = newNode
+		}
+
+		if n.VMem.System == 0 {
+			n.VMem.System = DEFAULT_SYSTEM_MEM
 		}
 		m[n.NodeID] = n
 	}
