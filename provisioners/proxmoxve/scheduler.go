@@ -1,6 +1,9 @@
 package proxmoxve
 
-import "sync"
+import (
+	"github.com/pkg/errors"
+	"sync"
+)
 
 type Node struct {
 	NodeID NodeID
@@ -46,42 +49,143 @@ type Scheduler struct {
 	m     sync.RWMutex
 }
 type ScheduleTx struct {
-	s        *Scheduler
+	S        *Scheduler
+	m        sync.Mutex
 	reserved []struct {
-		Spec VMSpec
 		ID   NodeID
+		Spec VMSpec
 	}
 	committed bool
-	reverted bool
+	reverted  bool
 }
 
 // UpdateNodes updates all nodes status.
 // If updateReserved is true, Scheduler.nodes.VCPU.Reserved and Scheduler.nodes.VMem.Reserved parameters are updated.
-func (s *Scheduler) UpdateNodes(fn func() ([]*Node, error), updateReserved bool) error {}
+func (s *Scheduler) UpdateNodes(fn func() ([]*Node, error), updateReserved bool) error {
+	panic("todo") // TODO
+}
 
 // Schedule decides best VM location and reserves it.
-func (s *Scheduler) Schedule(spec VMSpec) (NodeID, error) {}
+func (s *Scheduler) Schedule(spec VMSpec) (NodeID, error) {
+	panic("todo") // TODO
+}
 
 // Use notifies it to scheduler that specified VM started to running.
-func (s *Scheduler) Use(id NodeID, spec VMSpec) {}
+func (s *Scheduler) Use(id NodeID, spec VMSpec) {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	node := s.nodes[id]
+	if node == nil {
+		panic(errors.Errorf("not found node: %s", id))
+	}
+	if node.VCPU.Reserved-spec.Processors < 0 {
+		panic(errors.Errorf("lacking reserved vCPUs"))
+	}
+	if node.VMem.Reserved-spec.Memory < 0 {
+		panic(errors.Errorf("lacking reserved vMem"))
+	}
+
+	node.VCPU.Reserved -= spec.Processors
+	node.VCPU.Used += spec.Processors
+
+	node.VMem.Reserved -= spec.Memory
+	node.VMem.Used += spec.Memory
+}
 
 // Free releases reserved resources of vCPU and vMem.
 // You should call it when you need drops the reserved resources by Schedule().
-func (s *Scheduler) Free(id NodeID, spec VMSpec) {}
+func (s *Scheduler) Free(id NodeID, spec VMSpec) {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	node := s.nodes[id]
+	if node == nil {
+		panic(errors.Errorf("not found node: %s", id))
+	}
+	if node.VCPU.Reserved-spec.Processors < 0 {
+		panic(errors.Errorf("lacking reserved vCPUs"))
+	}
+	if node.VMem.Reserved-spec.Memory < 0 {
+		panic(errors.Errorf("lacking reserved vMem"))
+	}
+
+	node.VCPU.Reserved -= spec.Processors
+	node.VMem.Reserved -= spec.Memory
+}
 
 // Transaction starts an transaction to allocate resources atomically.
-func (s *Scheduler) Transaction(fn func(tx *ScheduleTx) error) error {}
+func (s *Scheduler) Transaction(fn func(tx *ScheduleTx) error) error {
+	tx := ScheduleTx{S: s}
+
+	err := fn(&tx)
+	if tx.IsFinished() {
+		// No need to commit or revert.
+		return err
+	}
+
+	if err != nil {
+		tx.Revert()
+	} else {
+		tx.Commit()
+	}
+	return err
+}
 
 // Schedule decides best VM location and reserves it.
 // The reserved resources are allocated or released when calling the Commit() or Revert().
-func (tx *ScheduleTx) Schedule(spec VMSpec) (NodeID, error) {}
+func (tx *ScheduleTx) Schedule(spec VMSpec) (NodeID, error) {
+	tx.m.Lock()
+	defer tx.m.Unlock()
+
+	tx.mustNotFinished()
+	id, err := tx.S.Schedule(spec)
+	if err != nil {
+		return NodeID(""), err
+	}
+
+	tx.reserved = append(tx.reserved, struct {
+		ID   NodeID
+		Spec VMSpec
+	}{ID: id, Spec: spec})
+	return id, nil
+}
 
 // Commit allocates all reserved resources while this transaction.
-func (tx *ScheduleTx) Commit() {}
+func (tx *ScheduleTx) Commit() {
+	tx.m.Lock()
+	defer tx.m.Unlock()
+	tx.mustNotFinished()
+	for _, r := range tx.reserved {
+		tx.S.Use(r.ID, r.Spec)
+	}
+}
 
 // Revert releases all reserved resources while this transaction.
-func (tx *ScheduleTx) Revert() {}
+func (tx *ScheduleTx) Revert() {
+	tx.m.Lock()
+	defer tx.m.Unlock()
+	tx.mustNotFinished()
+	for _, r := range tx.reserved {
+		tx.S.Free(r.ID, r.Spec)
+	}
+}
 
 // IsFinished returns true if already committed or reverted.
 // Otherwise, it returns false.
-func (tx *ScheduleTx) IsFinished() bool {}
+func (tx *ScheduleTx) IsFinished() bool {
+	tx.m.Lock()
+	defer tx.m.Unlock()
+	return tx.committed || tx.reverted
+}
+
+// mustNotFinished checks that if whether this transaction finished.
+// If it finished, mustNotFinished will panics.
+func (tx *ScheduleTx) mustNotFinished() {
+	if tx.committed {
+		panic(errors.Errorf("this transaction has been committed"))
+	}
+	if tx.reverted {
+		panic(errors.Errorf("this transaction has been reverted"))
+	}
+}
