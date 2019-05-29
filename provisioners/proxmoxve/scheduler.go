@@ -116,8 +116,10 @@ func (s *Scheduler) Free(id NodeID, spec VMSpec) {
 
 // Transaction starts an transaction to allocate resources atomically.
 func (s *Scheduler) Transaction(fn func(tx *ScheduleTx) error) error {
-	tx := ScheduleTx{S: s}
+	// NOTE: MUST NOT acquire the lock on this method.
+	// Because Schedule(), Use() and Free() are called some times while running the fn(),
 
+	tx := ScheduleTx{S: s}
 	err := fn(&tx)
 	if tx.IsFinished() {
 		// No need to commit or revert.
