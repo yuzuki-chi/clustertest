@@ -80,6 +80,14 @@ func (s *Scheduler) UpdateNodes(fn func() ([]*Node, error), updateReserved bool)
 				newNode.VCPU.Reserved = oldNode.VCPU.Reserved
 				newNode.VMem.Reserved = oldNode.VMem.Reserved
 				n = newNode
+			} else {
+				// Old data is not found.
+				// Treat the Reserved parameter as 0.
+				newNode := &Node{}
+				*newNode = *n
+				newNode.VCPU.Reserved = 0
+				newNode.VMem.Reserved = 0
+				n = newNode
 			}
 		}
 		m[n.NodeID] = n
