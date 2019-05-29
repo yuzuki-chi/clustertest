@@ -90,7 +90,22 @@ func (s *Scheduler) UpdateNodes(fn func() ([]*Node, error), updateReserved bool)
 
 // Schedule decides best VM location and reserves it.
 func (s *Scheduler) Schedule(spec VMSpec) (NodeID, error) {
-	panic("todo") // TODO
+	for id, n := range s.nodes {
+		if n.VCPU.Max > 0 {
+			if n.VCPU.Max-(n.VCPU.Used+n.VCPU.Reserved) < spec.Processors {
+				// insufficient vCPUs exists.
+				continue
+			}
+		}
+		if n.PMem-(n.VMem.System+n.VMem.Used+n.VMem.Reserved) < spec.Memory {
+			// insufficient memory exists.
+			continue
+		}
+		// Found a best node.
+		return id, nil
+	}
+	// Not found a best node.
+	return NodeID(""), errors.Errorf("full")
 }
 
 // Use notifies it to scheduler that specified VM started to running.
