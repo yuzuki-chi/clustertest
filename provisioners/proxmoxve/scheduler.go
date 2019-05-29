@@ -62,7 +62,30 @@ type ScheduleTx struct {
 // UpdateNodes updates all nodes status.
 // If updateReserved is true, Scheduler.nodes.VCPU.Reserved and Scheduler.nodes.VMem.Reserved parameters are updated.
 func (s *Scheduler) UpdateNodes(fn func() ([]*Node, error), updateReserved bool) error {
-	panic("todo") // TODO
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	nodes, err := fn()
+	if err != nil {
+		return err
+	}
+	m := map[NodeID]*Node{}
+	for _, n := range nodes {
+		if !updateReserved {
+			oldNode := s.nodes[n.NodeID]
+			if oldNode != nil {
+				// Copy the Reserved parameter values from old data.
+				newNode := &Node{}
+				*newNode = *n
+				newNode.VCPU.Reserved = oldNode.VCPU.Reserved
+				newNode.VMem.Reserved = oldNode.VMem.Reserved
+				n = newNode
+			}
+		}
+		m[n.NodeID] = n
+	}
+	s.nodes = m
+	return nil
 }
 
 // Schedule decides best VM location and reserves it.
