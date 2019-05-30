@@ -58,6 +58,10 @@ type VMInfo struct {
 	Cpus int
 	// Maximum memory in bytes.
 	Mem int
+	// Qemu process status.
+	// - stopped
+	// - running
+	Status string
 }
 type Config struct {
 	// CPU cores

@@ -179,8 +179,10 @@ func (p *PveProvisioner) updateSchedulerStatus(c *PveClient) error {
 				return nil, err
 			}
 			for _, vm := range vms {
-				totalCPUs += vm.Cpus
-				totalMem += vm.Mem
+				if vm.Status == "running" {
+					totalCPUs += vm.Cpus
+					totalMem += vm.Mem
+				}
 			}
 
 			nodes = append(nodes, &Node{
