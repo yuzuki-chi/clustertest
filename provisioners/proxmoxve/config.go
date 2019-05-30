@@ -37,7 +37,7 @@ type PveSpec struct {
 		Password     string
 		SSHPublicKey string `yaml:"ssh_public_key"`
 	}
-	VMs []*struct {
+	VMs map[string]*struct {
 		// Template name.
 		Template string
 		// Number of VMs.
