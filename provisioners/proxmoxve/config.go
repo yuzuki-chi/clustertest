@@ -44,7 +44,7 @@ type PveSpec struct {
 		Nodes int
 		// Number of processors.
 		Processors int
-		// RAM size (GiB).
+		// RAM size (MiB).
 		MemorySize int `yaml:"memory_size"`
 		// Minimal storage size (GiB).
 		// The storage may be large than specified size.
