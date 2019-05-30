@@ -18,7 +18,7 @@ func init() {
 
 type PveProvisioner struct {
 	spec   *PveSpec
-	config models.InfraConfig // 具体的な型を入れる
+	config *PveInfraConfig // 具体的な型を入れる
 }
 
 // Create creates all resources of defined by PveSpec.
@@ -40,9 +40,10 @@ func (p *PveProvisioner) Create() error {
 	}
 
 	// Create resources.
+	conf := NewPveInfraConfig(p.spec)
 	err = GlobalScheduler.Transaction(func(scheduler *ScheduleTx) error {
 		return addresspool.GlobalPool.Transaction(func(pool *addresspool.AddressPoolTx) error {
-			for _, vm := range p.spec.VMs {
+			for vmName, vm := range p.spec.VMs {
 				from, err := c.IDFromName(vm.Template)
 				if err != nil {
 					return errors.Wrapf(err, "not found template: %s", vm.Template)
@@ -67,6 +68,11 @@ func (p *PveProvisioner) Create() error {
 						NodeID: nodeID,
 						VMID:   toVMID,
 					}
+
+					conf.AddVM(vmName, VMConfig{
+						ID: to,
+						IP: net.IP{}, // todo: mismatch type of the ip variable
+					})
 
 					// Clone specified VM and set up it.
 					err = c.CloneVM(from, to, "", "This VM created by clustertest-proxmox-ve-provisioner")
@@ -98,6 +104,7 @@ func (p *PveProvisioner) Create() error {
 	if err != nil {
 		return err
 	}
+	p.config = conf
 
 	// todo: check resource status
 	// todo: update infra config
