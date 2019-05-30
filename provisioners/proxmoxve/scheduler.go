@@ -8,6 +8,9 @@ import (
 // 4096MiB = 4GiB
 const DEFAULT_SYSTEM_MEM = 4096
 
+// TODO: 複数のクラスタに対応できない
+var GlobalScheduler = &Scheduler{}
+
 type Node struct {
 	NodeID NodeID
 
