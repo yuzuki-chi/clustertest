@@ -37,6 +37,20 @@ type NodeVMID struct {
 	NodeID NodeID
 	VMID   VMID
 }
+type NodeInfo struct {
+	ID NodeID `json:"node"`
+	// Number of available CPUs.
+	MaxCPU int `json:"maxcpu"`
+	// Number of available memory in bytes.
+	MaxMem int `json:"maxmem"`
+	// Used memory in bytes.
+	Mem int
+	// Current node status
+	//  - unknown
+	//  - online
+	//  - offline
+	Status string
+}
 type VMInfo struct {
 	ID   NodeVMID
 	Name string
@@ -179,21 +193,14 @@ func (c *PveClient) Config(id NodeVMID) (*Config, error) {
 }
 
 // ListNodes returns all NodeIDs in the cluster.
-func (c *PveClient) ListNodes() ([]NodeID, error) {
-	var nodes []NodeID
+func (c *PveClient) ListNodes() ([]*NodeInfo, error) {
+	var nodes []*NodeInfo
 	err := cmdutils.HandlePanic(func() error {
-		var nodesInfo []struct {
-			Node NodeID
-		}
-		data := struct{ Data interface{} }{&nodesInfo}
+		data := struct{ Data interface{} }{&nodes}
 
 		err := c.reqJSON("GET", "/api2/json/nodes", nil, nil, &data)
 		if err != nil {
 			return err
-		}
-
-		for _, n := range nodesInfo {
-			nodes = append(nodes, n.Node)
 		}
 		return nil
 	})
@@ -251,7 +258,7 @@ func (c *PveClient) ListAllVMs() ([]*VMInfo, error) {
 		}
 
 		for _, node := range nodes {
-			vms, err := c.ListVMs(node)
+			vms, err := c.ListVMs(node.ID)
 			if err != nil {
 				return err
 			}
