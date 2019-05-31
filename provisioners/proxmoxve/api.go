@@ -10,12 +10,16 @@ import (
 	"github.com/levigross/grequests"
 	"github.com/pkg/errors"
 	"github.com/yuuki0xff/clustertest/cmdutils"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net"
 	"net/http"
 	"strings"
 )
+
+//var reqLogger = log.New(os.Stderr, "proxmox-ve: ", log.LstdFlags|log.Lshortfile)
+var reqLogger = log.New(ioutil.Discard, "", 0)
 
 // See https://pve.proxmox.com/pve-docs/api-viewer/
 type PveClient struct {
@@ -289,10 +293,13 @@ func (c *PveClient) ListAllVMs() ([]*VMInfo, error) {
 
 func (c *PveClient) req(method, path string, query interface{}, post interface{}) (*grequests.Response, error) {
 	url, option := c.ro(path, query, post)
+	reqLogger.Println(method, url, query, post)
 	r, err := grequests.DoRegularRequest(method, url, option)
 	if err != nil {
+		reqLogger.Println(err)
 		return nil, errors.Wrap(err, "failed to request")
 	}
+	reqLogger.Println(r.StatusCode)
 	if !r.Ok {
 		return nil, errors.Errorf("received unexpected status code: %d", r.StatusCode)
 	}
@@ -304,7 +311,7 @@ func (c *PveClient) reqJSON(method, path string, query, post, js interface{}) er
 		return err
 	}
 
-	log.Println(r.String())
+	reqLogger.Println(r.String())
 	err = r.JSON(js)
 	if err != nil {
 		return errors.Wrap(err, "failed to unmarshal")
