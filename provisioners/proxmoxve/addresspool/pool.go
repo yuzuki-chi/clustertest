@@ -96,16 +96,25 @@ func (p *AddressPool) Transaction(fn func(tx *AddressPoolTx) error) error {
 // Allocate allocates an IPv4 address and returns it by the pve-qm-ipconfig format.
 // If this address pool is full, Allocate returns empty string.
 func (tx *AddressPoolTx) Allocate(segments []Segment) string {
+	s, ip, ok := tx.AllocateIP(segments)
+	if !ok {
+		return ""
+	}
+	tx.allocated = append(tx.allocated, ip)
+	return tx.P.ToPveIPConf(s, ip)
+}
+
+func (tx *AddressPoolTx) AllocateIP(segments []Segment) (Segment, net.IP, bool) {
 	tx.m.Lock()
 	defer tx.m.Unlock()
 	tx.mustNotFinished()
 
 	s, ip, ok := tx.P.AllocateIP(segments)
 	if !ok {
-		return ""
+		return Segment{}, nil, false
 	}
 	tx.allocated = append(tx.allocated, ip)
-	return tx.P.ToPveIPConf(s, ip)
+	return s, ip, true
 }
 
 // Commit allocates all reserved resources while this transaction.
