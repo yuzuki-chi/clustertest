@@ -50,7 +50,10 @@ func (p *PveProvisioner) Create() error {
 				}
 				for i := 0; i < vm.Nodes; i++ {
 					// Allocate resources.
-					ip := pool.Allocate(segs)
+					s, ip, ok := pool.AllocateIP(segs)
+					if !ok {
+						return errors.Errorf("failed to allocate IP address")
+					}
 					nodeID, err := scheduler.Schedule(VMSpec{
 						Processors: vm.Processors,
 						Memory:     vm.MemorySize,
@@ -71,7 +74,7 @@ func (p *PveProvisioner) Create() error {
 
 					conf.AddVM(vmName, VMConfig{
 						ID: to,
-						IP: net.IP{}, // todo: mismatch type of the ip variable
+						IP: ip,
 					})
 
 					// Clone specified VM and set up it.
@@ -91,7 +94,7 @@ func (p *PveProvisioner) Create() error {
 						Memory:     vm.MemorySize * 1024,
 						User:       p.spec.User.User,
 						SSHKeys:    p.spec.User.SSHPublicKey,
-						IPAddress:  ip,
+						IPAddress:  addresspool.ToPveIPConf(s, ip),
 					})
 					if err != nil {
 						return errors.Wrap(err, "failed to update config")
