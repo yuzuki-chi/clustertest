@@ -16,11 +16,17 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 )
 
-//var reqLogger = log.New(os.Stderr, "proxmox-ve: ", log.LstdFlags|log.Lshortfile)
 var reqLogger = log.New(ioutil.Discard, "", 0)
+
+func init() {
+	if os.Getenv("CLUSTERTEST_DEBUG") != "" {
+		reqLogger = log.New(os.Stderr, "proxmox-ve: ", log.LstdFlags|log.Lshortfile)
+	}
+}
 
 // See https://pve.proxmox.com/pve-docs/api-viewer/
 type PveClient struct {
