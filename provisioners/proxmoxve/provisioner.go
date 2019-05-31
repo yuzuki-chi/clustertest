@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	provisioners.Provisioners[models.SpecType("proxomox-ve")] = func(spec models.Spec) models.Provisioner {
+	provisioners.Provisioners[models.SpecType("proxmox-ve")] = func(spec models.Spec) models.Provisioner {
 		return &PveProvisioner{
 			spec: spec.(*PveSpec),
 		}
