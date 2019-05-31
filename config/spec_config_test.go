@@ -16,7 +16,7 @@ extra: fields
 `)
 
 		err := yaml.Unmarshal(data, c)
-		assert.EqualError(t, err, "unsupported type: invalid-type")
+		assert.EqualError(t, err, "unsupported SpecType: invalid-type")
 		assert.Nil(t, c.Data)
 	})
 
