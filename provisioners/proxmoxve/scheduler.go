@@ -124,6 +124,8 @@ func (s *Scheduler) Schedule(spec VMSpec) (NodeID, error) {
 			continue
 		}
 		// Found a best node.
+		n.VCPU.Reserved += spec.Processors
+		n.VMem.Reserved += spec.Memory
 		return id, nil
 	}
 	// Not found a best node.
