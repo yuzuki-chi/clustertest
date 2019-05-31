@@ -138,7 +138,7 @@ func (p *PveProvisioner) Create() error {
 			// OK
 		}
 	}
-	panic("not implemented")
+	return nil
 }
 func (p *PveProvisioner) Delete() error {
 	// todo: get client
