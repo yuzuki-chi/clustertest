@@ -38,7 +38,7 @@ func (p *AddressPool) Allocate(segments []Segment) string {
 	if !ok {
 		return ""
 	}
-	return p.toPveIPConf(s, ip)
+	return p.ToPveIPConf(s, ip)
 }
 func (p *AddressPool) AllocateIP(segments []Segment) (Segment, net.IP, bool) {
 	p.m.Lock()
@@ -55,7 +55,7 @@ func (p *AddressPool) AllocateIP(segments []Segment) (Segment, net.IP, bool) {
 	}
 	return Segment{}, nil, false
 }
-func (p *AddressPool) toPveIPConf(s Segment, ip net.IP) string {
+func (p *AddressPool) ToPveIPConf(s Segment, ip net.IP) string {
 	return fmt.Sprintf("gw=%s,ip=%s/%d", s.Gateway, ip, s.Mask)
 }
 func (p *AddressPool) Free(ip net.IP) {
@@ -105,7 +105,7 @@ func (tx *AddressPoolTx) Allocate(segments []Segment) string {
 		return ""
 	}
 	tx.allocated = append(tx.allocated, ip)
-	return tx.P.toPveIPConf(s, ip)
+	return tx.P.ToPveIPConf(s, ip)
 }
 
 // Commit allocates all reserved resources while this transaction.
