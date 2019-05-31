@@ -15,6 +15,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -76,7 +77,7 @@ type Config struct {
 	Memory int `url:"memory" json:"memory"`
 	// Cloud-init: user name
 	User string `url:"ciuser" json:"ciuser"`
-	// Cloud-init: SSH public keys (url encoded)
+	// Cloud-init: SSH public keys
 	SSHKeys string `url:"sshkeys" json:"sshkeys"`
 	// Cloud-init: static IP address configuration
 	// format: gw=<ipv4>,ip=<ipv4>/<CIDR>
@@ -184,6 +185,15 @@ func (c *PveClient) ResizeVolume(id NodeVMID, disk string, size int) error {
 func (c *PveClient) UpdateConfig(id NodeVMID, config *Config) error {
 	return cmdutils.HandlePanic(func() error {
 		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/config", id.NodeID, id.VMID)
+
+		// Encode the SSHKeys field.
+		// Server only accepts url encoded data.  We should encode the SSHKeys.
+		if config.SSHKeys != "" {
+			newConfig := &Config{}
+			*newConfig = *config
+			newConfig.SSHKeys = urlEncode(config.SSHKeys)
+			config = newConfig
+		}
 		_, err := c.req("PUT", url, config, nil)
 		return err
 	})
@@ -197,6 +207,10 @@ func (c *PveClient) Config(id NodeVMID) (*Config, error) {
 		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/config", id.NodeID, id.VMID)
 		return c.reqJSON("GET", url, nil, nil, &data)
 	})
+	if err == nil {
+		// SSHKeys field is url encoded.  We should decode it.
+		conf.SSHKeys, err = urlDecode(conf.SSHKeys)
+	}
 	return conf, err
 }
 
@@ -422,4 +436,11 @@ func jsonCast(from interface{}, to interface{}) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func urlEncode(s string) string {
+	return strings.ReplaceAll(url.QueryEscape(s), "+", "%20")
+}
+func urlDecode(s string) (string, error) {
+	return url.QueryUnescape(s)
 }
