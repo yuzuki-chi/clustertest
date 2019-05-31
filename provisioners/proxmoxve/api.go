@@ -20,6 +20,8 @@ import (
 	"strings"
 )
 
+const PveMaxVMID = 999999999
+
 var reqLogger = log.New(ioutil.Discard, "", 0)
 
 func init() {
@@ -141,7 +143,7 @@ func (c *PveClient) RandomVMID() (VMID, error) {
 	// Find the unused VMID.
 	maxTries := 10000
 	for i := 0; i < maxTries; i++ {
-		vmid := VMID(fmt.Sprint(rand.Int31()))
+		vmid := VMID(fmt.Sprint(rand.Int31n(PveMaxVMID)))
 		_, used := usedIDs[vmid]
 		if !used {
 			return vmid, nil
