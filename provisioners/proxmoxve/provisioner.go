@@ -105,6 +105,7 @@ func (p *PveProvisioner) Create() error {
 		})
 	})
 	if err != nil {
+		// TODO: remove allocated resources
 		return err
 	}
 	p.config = conf
