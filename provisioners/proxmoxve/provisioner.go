@@ -1,13 +1,17 @@
 package proxmoxve
 
 import (
+	"context"
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/yuuki0xff/clustertest/models"
 	"github.com/yuuki0xff/clustertest/provisioners"
 	"github.com/yuuki0xff/clustertest/provisioners/proxmoxve/addresspool"
 	"net"
+	"time"
 )
+
+const CloneTimeout = 30 * time.Second
 
 func init() {
 	provisioners.Provisioners[models.SpecType("proxmox-ve")] = func(spec models.Spec) models.Provisioner {
@@ -84,6 +88,14 @@ func (p *PveProvisioner) Create() error {
 					if err != nil {
 						return errors.Wrap(err, "failed to clone")
 					}
+
+					// Wait for clone operation to complete.
+					ctx, _ := context.WithTimeout(context.Background(), CloneTimeout)
+					err = c.WaitVMCreation(to, ctx)
+					if err != nil {
+						return errors.Wrap(err, "clone operation is timeout")
+					}
+
 					if vm.StorageSize > 0 {
 						err = c.ResizeVolume(to, "scsi0", vm.StorageSize)
 						if err != nil {

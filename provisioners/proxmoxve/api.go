@@ -2,6 +2,7 @@ package proxmoxve
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/hex"
@@ -18,6 +19,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 )
 
 const PveMaxVMID = 999999999
@@ -170,6 +172,25 @@ func (c *PveClient) CloneVM(from, to NodeVMID, name, description string) error {
 		_, err := c.req("POST", url, query, nil)
 		return err
 	})
+}
+
+// WaitVMCreation waits until VM is ready.
+func (c *PveClient) WaitVMCreation(id NodeVMID, ctx context.Context) error {
+	var err error
+	timer := time.NewTimer(0)
+	for {
+		select {
+		case <-timer.C:
+			_, err = c.VMInfo(id)
+			if err == nil {
+				return nil
+			}
+		case <-ctx.Done():
+			return errors.Wrap(err, "(WaitVMCreation timeout) latest error:")
+		}
+
+		timer.Reset(time.Second)
+	}
 }
 
 // ResizeVolume changes size of the disk.
