@@ -29,7 +29,7 @@ type PveSpec struct {
 		EndAddress   string `yaml:"end_address"`
 		CIDR         int
 		Gateway      string
-	}
+	} `yaml:"address_pools"`
 	// User information.
 	// This user will create by cloud-init at VM start-up.
 	User *struct {
