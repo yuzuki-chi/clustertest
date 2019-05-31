@@ -24,6 +24,6 @@ func (c *SpecConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 			c.Data = fn()
 			return c.Data, nil
 		}
-		return nil, fmt.Errorf("unsupported type: %s", typeName)
+		return nil, fmt.Errorf("unsupported SpecType: %s", typeName)
 	})
 }
