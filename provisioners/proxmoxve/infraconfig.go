@@ -12,8 +12,9 @@ type PveInfraConfig struct {
 	m       sync.Mutex
 }
 type VMConfig struct {
-	ID NodeVMID
-	IP net.IP
+	ID   NodeVMID
+	IP   net.IP
+	Spec VMSpec
 }
 
 func NewPveInfraConfig(spec *PveSpec) *PveInfraConfig {

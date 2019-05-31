@@ -59,10 +59,11 @@ func (p *PveProvisioner) Create() error {
 					if !ok {
 						return errors.Errorf("failed to allocate IP address")
 					}
-					nodeID, err := scheduler.Schedule(VMSpec{
+					vmSpec := VMSpec{
 						Processors: vm.Processors,
 						Memory:     vm.MemorySize,
-					})
+					}
+					nodeID, err := scheduler.Schedule(vmSpec)
 					if err != nil {
 						return err
 					}
@@ -78,8 +79,9 @@ func (p *PveProvisioner) Create() error {
 					}
 
 					conf.AddVM(vmGroupName, VMConfig{
-						ID: to,
-						IP: ip,
+						ID:   to,
+						IP:   ip,
+						Spec: vmSpec,
 					})
 
 					// Clone specified VM and set up it.
@@ -100,6 +102,13 @@ func (p *PveProvisioner) Create() error {
 						err = c.ResizeVolume(to, "scsi0", vm.StorageSize)
 						if err != nil {
 							return errors.Wrap(err, "failed to resize")
+						}
+
+						// Wait for resize operation to complete.
+						ctx, _ = context.WithTimeout(context.Background(), CloneTimeout)
+						err = c.WaitVMCreation(to, ctx)
+						if err != nil {
+							return errors.Wrap(err, "clone operation is timeout")
 						}
 					}
 					err = c.UpdateConfig(to, &Config{
@@ -140,13 +149,31 @@ func (p *PveProvisioner) Create() error {
 	}
 	return nil
 }
-func (p *PveProvisioner) Delete() error {
-	// todo: get client
-	// todo: delete resources
-	// todo: check resource status
-	// todo: update infra config
-	panic("not implemented")
 
+// Delete deletes all resources of defined by PveSpec.
+func (p *PveProvisioner) Delete() error {
+	if p.config == nil {
+		return errors.Errorf("still not provisioned")
+	}
+
+	c := p.client()
+
+	// Delete resources.
+	for _, vms := range p.config.VMs {
+		for _, vm := range vms {
+			err := c.DeleteVM(vm.ID)
+			if err != nil {
+				return errors.Wrap(err, "failed to delete VM")
+			}
+			addresspool.GlobalPool.Free(vm.IP)
+			GlobalScheduler.Free(vm.ID.NodeID, vm.Spec)
+		}
+	}
+
+	// All resources are deleted.
+	// Should discard the InfraConfig.
+	p.config = nil
+	return nil
 }
 func (p *PveProvisioner) Spec() models.Spec {
 	return p.spec

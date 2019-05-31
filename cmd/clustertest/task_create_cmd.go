@@ -35,6 +35,12 @@ func taskCreateFn(cmd *cobra.Command, args []string) error {
 				ShowError(err)
 				return nil
 			}
+
+			err = pro.Delete()
+			if err != nil {
+				ShowError(err)
+				return nil
+			}
 		}
 	}
 

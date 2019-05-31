@@ -334,6 +334,38 @@ func (c *PveClient) ListAllVMs() ([]*VMInfo, error) {
 	return allvms, nil
 }
 
+// DeleteVM deletes the VM.
+// If VM is running, it will be stop immediately and delete it.
+func (c *PveClient) DeleteVM(id NodeVMID) error {
+	return cmdutils.HandlePanic(func() error {
+		info, err := c.VMInfo(id)
+		if err != nil {
+			return err
+		}
+		if info.Status == "running" {
+			// VM is running.
+			// Should stop VM before delete.
+			err = c.StopVM(id)
+			if err != nil {
+				return err
+			}
+		}
+
+		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s", id.NodeID, id.VMID)
+		_, err = c.req("DELETE", url, nil, nil)
+		return err
+	})
+}
+
+// StopVM stops the VM immediately.  This operation is not safe.
+// This is akin to pulling the power plug of a running computer and may cause VM data corruption.
+func (c *PveClient) StopVM(id NodeVMID) error {
+	return cmdutils.HandlePanic(func() error {
+		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/status/stop", id.NodeID, id.VMID)
+		_, err := c.req("POST", url, nil, nil)
+		return err
+	})
+}
 func (c *PveClient) req(method, path string, query interface{}, post interface{}) (*grequests.Response, error) {
 	url, option := c.ro(path, query, post)
 	reqLogger.Println(method, url, query, post)
