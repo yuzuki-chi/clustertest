@@ -196,6 +196,17 @@ func (c *PveClient) Config(id NodeVMID) (*Config, error) {
 	return conf, err
 }
 
+// VMInfo returns current status of the specified VM.
+func (c *PveClient) VMInfo(id NodeVMID) (*VMInfo, error) {
+	info := &VMInfo{}
+	err := cmdutils.HandlePanic(func() error {
+		data := struct{ Data *VMInfo }{info}
+		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/status/current", id.NodeID, id.VMID)
+		return c.reqJSON("GET", url, nil, nil, &data)
+	})
+	return info, err
+}
+
 // ListNodes returns all NodeIDs in the cluster.
 func (c *PveClient) ListNodes() ([]*NodeInfo, error) {
 	var nodes []*NodeInfo

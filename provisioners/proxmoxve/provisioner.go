@@ -1,6 +1,7 @@
 package proxmoxve
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"github.com/yuuki0xff/clustertest/models"
 	"github.com/yuuki0xff/clustertest/provisioners"
@@ -108,10 +109,22 @@ func (p *PveProvisioner) Create() error {
 		// TODO: remove allocated resources
 		return err
 	}
+	// Update the InfraConfig.
 	p.config = conf
 
-	// todo: check resource status
-	// todo: update infra config
+	// Check resource status.
+	for _, vms := range conf.VMs {
+		for _, vm := range vms {
+			info, err := c.VMInfo(vm.ID)
+			if err != nil {
+				return err
+			}
+			if info.Status != "stopped" {
+				return fmt.Errorf("invalid status: %s (id=%s)", info.Status, vm.ID)
+			}
+			// OK
+		}
+	}
 	panic("not implemented")
 }
 func (p *PveProvisioner) Delete() error {
