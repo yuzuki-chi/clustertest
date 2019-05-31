@@ -44,7 +44,7 @@ func (p *PveProvisioner) Create() error {
 	conf := NewPveInfraConfig(p.spec)
 	err = GlobalScheduler.Transaction(func(scheduler *ScheduleTx) error {
 		return addresspool.GlobalPool.Transaction(func(pool *addresspool.AddressPoolTx) error {
-			for vmName, vm := range p.spec.VMs {
+			for vmGroupName, vm := range p.spec.VMs {
 				from, err := c.IDFromName(vm.Template)
 				if err != nil {
 					return errors.Wrapf(err, "not found template: %s", vm.Template)
@@ -73,13 +73,14 @@ func (p *PveProvisioner) Create() error {
 						VMID:   toVMID,
 					}
 
-					conf.AddVM(vmName, VMConfig{
+					conf.AddVM(vmGroupName, VMConfig{
 						ID: to,
 						IP: ip,
 					})
 
 					// Clone specified VM and set up it.
-					err = c.CloneVM(from, to, "", "This VM created by clustertest-proxmox-ve-provisioner")
+					vmName := fmt.Sprintf("%s-%s-%d", p.spec.Name, vmGroupName, i)
+					err = c.CloneVM(from, to, vmName, "This VM created by clustertest-proxmox-ve-provisioner")
 					if err != nil {
 						return errors.Wrap(err, "failed to clone")
 					}
