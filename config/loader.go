@@ -28,7 +28,7 @@ func LoadFromDirsOrFiles(paths []string) ([]*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	tasks2, err := LoadFromDirs(dirs)
+	tasks2, err := LoadFromFiles(files)
 	if err != nil {
 		return nil, err
 	}
