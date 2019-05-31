@@ -10,6 +10,8 @@ func init() {
 }
 
 type PveSpec struct {
+	// Identifier of the spec.
+	Name string
 	// Proxmox VE account settings..
 	Proxmox *struct {
 		// URL of the Proxmox VE API server.
