@@ -9,5 +9,6 @@ type Provisioner interface {
 	Delete() error
 	Spec() Spec
 	Config() InfraConfig
+	ScriptSet() *ScriptSet
 	ScriptExecutor(scriptType ScriptType) ScriptExecutor
 }

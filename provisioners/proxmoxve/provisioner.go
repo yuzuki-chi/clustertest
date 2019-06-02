@@ -180,6 +180,9 @@ func (p *PveProvisioner) Config() models.InfraConfig {
 	// todo
 	panic("not implemented")
 }
+func (p *PveProvisioner) ScriptSet() *models.ScriptSet {
+	panic("not implemented")
+}
 func (p *PveProvisioner) ScriptExecutor(scriptType models.ScriptType) models.ScriptExecutor {
 	switch scriptType {
 	case models.ScriptType("remote-exec"):
