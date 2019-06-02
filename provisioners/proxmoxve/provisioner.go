@@ -24,7 +24,7 @@ func init() {
 
 type PveProvisioner struct {
 	spec   *PveSpec
-	config *PveInfraConfig // 具体的な型を入れる
+	config *PveInfraConfig
 }
 
 // Create creates all resources of defined by PveSpec.
