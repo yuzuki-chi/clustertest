@@ -87,14 +87,14 @@ func (p *PveProvisioner) Create() error {
 
 					// Clone specified VM and set up it.
 					vmName := fmt.Sprintf("%s-%s-%d", p.spec.Name, vmGroupName, i)
-					err = c.CloneVM(from, to, vmName, "This VM created by clustertest-proxmox-ve-provisioner")
+					task, err := c.CloneVM(from, to, vmName, "This VM created by clustertest-proxmox-ve-provisioner")
 					if err != nil {
 						return errors.Wrap(err, "failed to clone")
 					}
 
 					// Wait for clone operation to complete.
 					ctx, _ := context.WithTimeout(context.Background(), CloneTimeout)
-					err = c.WaitVMCreation(to, ctx)
+					err = task.Wait(ctx)
 					if err != nil {
 						return errors.Wrap(err, "clone operation is timeout")
 					}
@@ -103,13 +103,6 @@ func (p *PveProvisioner) Create() error {
 						err = c.ResizeVolume(to, "scsi0", vm.StorageSize)
 						if err != nil {
 							return errors.Wrap(err, "failed to resize")
-						}
-
-						// Wait for resize operation to complete.
-						ctx, _ = context.WithTimeout(context.Background(), CloneTimeout)
-						err = c.WaitVMCreation(to, ctx)
-						if err != nil {
-							return errors.Wrap(err, "clone operation is timeout")
 						}
 					}
 					err = c.UpdateConfig(to, &Config{

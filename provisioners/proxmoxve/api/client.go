@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/hex"
@@ -18,7 +17,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
 )
 
 const PveMaxVMID = 999999999
@@ -137,8 +135,9 @@ func (c *PveClient) RandomVMID() (VMID, error) {
 }
 
 // CloneVM creates a copy of virtual machine/template.
-func (c *PveClient) CloneVM(from, to NodeVMID, name, description string) error {
-	return cmdutils.HandlePanic(func() error {
+func (c *PveClient) CloneVM(from, to NodeVMID, name, description string) (Task, error) {
+	var task Task
+	err := cmdutils.HandlePanic(func() error {
 		query := struct {
 			NewVMID     VMID   `url:"newid"`
 			TargetNode  NodeID `url:"target"`
@@ -151,28 +150,61 @@ func (c *PveClient) CloneVM(from, to NodeVMID, name, description string) error {
 			Description: description,
 		}
 		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/clone", from.NodeID, from.VMID)
-		_, err := c.req("POST", url, query, nil)
-		return err
+
+		var taskID TaskID
+		data := struct{ Data interface{} }{&taskID}
+		err := c.reqJSON("POST", url, query, nil, &data)
+		if err != nil {
+			return err
+		}
+		task = Task{
+			NodeID: from.NodeID,
+			TaskID: taskID,
+			Client: c,
+		}
+		return nil
 	})
+	return task, err
 }
 
-// WaitVMCreation waits until VM is ready.
-func (c *PveClient) WaitVMCreation(id NodeVMID, ctx context.Context) error {
-	var err error
-	timer := time.NewTimer(0)
-	for {
-		select {
-		case <-timer.C:
-			_, err = c.VMInfo(id)
-			if err == nil {
-				return nil
+func (c *PveClient) taskStatus(task *Task) (TaskStatus, error) {
+	var status TaskStatus
+	err := cmdutils.HandlePanic(func() error {
+		data := struct{ Data *TaskStatus }{Data: &status}
+		url := fmt.Sprintf("/api2/json/nodes/%s/tasks/%s/status", task.NodeID, task.TaskID)
+		return c.reqJSON("GET", url, nil, nil, &data)
+	})
+	return status, err
+}
+func (c *PveClient) taskLog(task *Task, start, limit int) ([]string, error) {
+	var lines []string
+	err := cmdutils.HandlePanic(func() error {
+		data := struct {
+			Data []*struct {
+				// Line number
+				N int
+				// Line text
+				T string
 			}
-		case <-ctx.Done():
-			return errors.Wrap(err, "(WaitVMCreation timeout) latest error:")
+		}{}
+
+		query := struct {
+			Start int `url:"start"`
+			Limit int `url:"limit"`
+		}{start, limit}
+
+		url := fmt.Sprintf("/api2/json/nodes/%s/tasks/%s/log", task.NodeID, task.TaskID)
+		err := c.reqJSON("GET", url, &query, nil, &data)
+		if err != nil {
+			return err
 		}
 
-		timer.Reset(time.Second)
-	}
+		for _, line := range data.Data {
+			lines = append(lines, line.T)
+		}
+		return nil
+	})
+	return lines, err
 }
 
 // ResizeVolume changes size of the disk.
