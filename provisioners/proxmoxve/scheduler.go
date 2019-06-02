@@ -111,6 +111,7 @@ func (s *Scheduler) UpdateNodes(fn func() ([]*Node, error), updateReserved bool)
 }
 
 // Schedule decides best VM location and reserves it.
+// You should call the Use() or Cancel() after call it.
 func (s *Scheduler) Schedule(spec VMSpec) (NodeID, error) {
 	for id, n := range s.nodes {
 		if n.VCPU.Max > 0 {
@@ -133,6 +134,8 @@ func (s *Scheduler) Schedule(spec VMSpec) (NodeID, error) {
 }
 
 // Use notifies it to scheduler that specified VM started to running.
+// We regards the reserved resources as in use.
+// You should call Free() when release resources.
 func (s *Scheduler) Use(id NodeID, spec VMSpec) {
 	s.m.Lock()
 	defer s.m.Unlock()
