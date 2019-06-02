@@ -179,7 +179,7 @@ func (p *PveProvisioner) Spec() models.Spec {
 func (p *PveProvisioner) Config() models.InfraConfig {
 	return p.config
 }
-func (p *PveProvisioner) ScriptSet() *models.ScriptSet {
+func (p *PveProvisioner) ScriptSets() []*models.ScriptSet {
 	var sets []*models.ScriptSet
 	for _, vmGroup := range p.spec.VMs {
 		s := &models.ScriptSet{
@@ -189,10 +189,7 @@ func (p *PveProvisioner) ScriptSet() *models.ScriptSet {
 		}
 		sets = append(sets, s)
 	}
-
-	// Merge multiple ScriptSet to a single ScriptSet.
-	// todo
-	panic("not implemented")
+	return sets
 }
 func (p *PveProvisioner) ScriptExecutor(scriptType models.ScriptType) models.ScriptExecutor {
 	switch scriptType {
