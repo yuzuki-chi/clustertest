@@ -33,3 +33,9 @@ func (c *ScriptConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return nil, fmt.Errorf("unsupported type: %s", typeName)
 	})
 }
+func (c *ScriptConfig) Get() models.Script {
+	if c == nil {
+		return nil
+	}
+	return c.Data
+}

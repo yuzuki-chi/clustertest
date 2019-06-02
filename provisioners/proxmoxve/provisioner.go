@@ -183,9 +183,9 @@ func (p *PveProvisioner) ScriptSet() *models.ScriptSet {
 	var sets []*models.ScriptSet
 	for _, vmGroup := range p.spec.VMs {
 		s := &models.ScriptSet{
-			Before: vmGroup.Scripts.Before.Data,
-			Main:   vmGroup.Scripts.Main.Data,
-			After:  vmGroup.Scripts.After.Data,
+			Before: vmGroup.Scripts.Before.Get(),
+			Main:   vmGroup.Scripts.Main.Get(),
+			After:  vmGroup.Scripts.After.Get(),
 		}
 		sets = append(sets, s)
 	}
