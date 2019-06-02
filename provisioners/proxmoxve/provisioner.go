@@ -7,6 +7,7 @@ import (
 	"github.com/yuuki0xff/clustertest/models"
 	"github.com/yuuki0xff/clustertest/provisioners"
 	"github.com/yuuki0xff/clustertest/provisioners/proxmoxve/addresspool"
+	. "github.com/yuuki0xff/clustertest/provisioners/proxmoxve/api"
 	"net"
 	"time"
 )

@@ -2,6 +2,7 @@ package proxmoxve
 
 import (
 	"github.com/stretchr/testify/assert"
+	. "github.com/yuuki0xff/clustertest/provisioners/proxmoxve/api"
 	"testing"
 )
 

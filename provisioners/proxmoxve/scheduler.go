@@ -2,6 +2,7 @@ package proxmoxve
 
 import (
 	"github.com/pkg/errors"
+	. "github.com/yuuki0xff/clustertest/provisioners/proxmoxve/api"
 	"sync"
 )
 
