@@ -177,8 +177,7 @@ func (p *PveProvisioner) Spec() models.Spec {
 	return p.spec
 }
 func (p *PveProvisioner) Config() models.InfraConfig {
-	// todo
-	panic("not implemented")
+	return p.config
 }
 func (p *PveProvisioner) ScriptSet() *models.ScriptSet {
 	panic("not implemented")
