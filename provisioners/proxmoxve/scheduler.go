@@ -155,9 +155,9 @@ func (s *Scheduler) Use(id NodeID, spec VMSpec) {
 	node.VMem.Used += spec.Memory
 }
 
-// Free releases reserved resources of vCPU and vMem.
+// Cancel releases reserved resources.
 // You should call it when you need drops the reserved resources by Schedule().
-func (s *Scheduler) Free(id NodeID, spec VMSpec) {
+func (s *Scheduler) Cancel(id NodeID, spec VMSpec) {
 	s.m.Lock()
 	defer s.m.Unlock()
 
@@ -174,6 +174,25 @@ func (s *Scheduler) Free(id NodeID, spec VMSpec) {
 
 	node.VCPU.Reserved -= spec.Processors
 	node.VMem.Reserved -= spec.Memory
+}
+
+func (s *Scheduler) Free(id NodeID, spec VMSpec) {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	node := s.nodes[id]
+	if node == nil {
+		panic(errors.Errorf("not found node: %s", id))
+	}
+	if node.VCPU.Used-spec.Processors < 0 {
+		panic(errors.Errorf("lacking reserved vCPUs"))
+	}
+	if node.VMem.Used-spec.Memory < 0 {
+		panic(errors.Errorf("lacking reserved vMem"))
+	}
+
+	node.VCPU.Used -= spec.Processors
+	node.VMem.Used -= spec.Memory
 }
 
 // Transaction starts an transaction to allocate resources atomically.
@@ -231,7 +250,7 @@ func (tx *ScheduleTx) Revert() {
 	defer tx.m.Unlock()
 	tx.mustNotFinished()
 	for _, r := range tx.reserved {
-		tx.S.Free(r.ID, r.Spec)
+		tx.S.Cancel(r.ID, r.Spec)
 	}
 }
 
