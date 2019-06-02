@@ -6,6 +6,7 @@ import (
 	"github.com/yuuki0xff/clustertest/config"
 	"github.com/yuuki0xff/clustertest/provisioners"
 	_ "github.com/yuuki0xff/clustertest/provisioners/proxmoxve"
+	_ "github.com/yuuki0xff/clustertest/scripts/localshell"
 )
 
 func taskCreateFn(cmd *cobra.Command, args []string) error {
