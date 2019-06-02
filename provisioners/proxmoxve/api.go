@@ -13,7 +13,6 @@ import (
 	"github.com/yuuki0xff/clustertest/cmdutils"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -131,27 +130,12 @@ func (c *PveClient) IDFromName(name string) (NodeVMID, error) {
 
 // RandomVMID returns an unused VMID.
 func (c *PveClient) RandomVMID() (VMID, error) {
-	usedIDs := map[VMID]struct{}{}
-
-	// Load all VMIDs and fill usedIDs.
-	vms, err := c.ListAllVMs()
-	if err != nil {
-		return VMID(""), err
-	}
-	for _, v := range vms {
-		usedIDs[v.ID.VMID] = struct{}{}
-	}
-
-	// Find the unused VMID.
-	maxTries := 10000
-	for i := 0; i < maxTries; i++ {
-		vmid := VMID(fmt.Sprint(rand.Int31n(PveMaxVMID)))
-		_, used := usedIDs[vmid]
-		if !used {
-			return vmid, nil
-		}
-	}
-	return VMID(""), errors.New("RandomVMID: not found the unused VMID")
+	var vmid VMID
+	err := cmdutils.HandlePanic(func() error {
+		data := struct{ Data *VMID }{&vmid}
+		return c.reqJSON("GET", "/api2/json/cluster/nextid", nil, nil, &data)
+	})
+	return vmid, err
 }
 
 // CloneVM creates a copy of virtual machine/template.
