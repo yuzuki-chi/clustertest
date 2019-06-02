@@ -93,8 +93,6 @@ type Config struct {
 	IPAddress string `url:"ipconfig0" json:"ipconfig0"`
 }
 
-// todo: add some methods
-
 // Ticket creates an authentication ticket.
 func (c *PveClient) Ticket() error {
 	return cmdutils.HandlePanic(func() error {
