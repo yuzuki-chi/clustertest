@@ -157,6 +157,10 @@ func (p *PveProvisioner) Delete() error {
 	}
 
 	c := p.client()
+	err := c.Ticket()
+	if err != nil {
+		return err
+	}
 
 	// Delete resources.
 	for _, vms := range p.config.VMs {
