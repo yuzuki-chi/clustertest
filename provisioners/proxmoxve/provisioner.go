@@ -193,9 +193,9 @@ func (p *PveProvisioner) ScriptSets() []*models.ScriptSet {
 }
 func (p *PveProvisioner) ScriptExecutor(scriptType models.ScriptType) models.ScriptExecutor {
 	switch scriptType {
-	case models.ScriptType("remote-exec"):
+	case models.ScriptType("remote-shell"):
 		// todo: use default impl
-	case models.ScriptType("local-exec"):
+	case models.ScriptType("local-shell"):
 		// todo: use default impl
 	default:
 		// todo: not implemented
