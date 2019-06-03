@@ -15,7 +15,7 @@ type Executor struct{}
 
 // MultiResult represents the execution result of multiple commands.
 type MultiResult struct {
-	results []*Result
+	results []models.ScriptResult
 }
 
 // Result represents an result.
@@ -85,12 +85,7 @@ func (r *MultiResult) Host() string {
 func (r *MultiResult) Output() []byte {
 	buf := bytes.Buffer{}
 	for _, r := range r.results {
-		fmt.Fprintf(&buf, "$ %s\n", r.Command)
-		out := r.Output()
-		buf.Write(out)
-		if !bytes.HasSuffix(out, []byte("\n")) {
-			buf.WriteString("\n")
-		}
+		buf.Write(r.Output())
 	}
 	return buf.Bytes()
 }
@@ -117,7 +112,13 @@ func (r *Result) EndTime() time.Time {
 	return r.End
 }
 func (r *Result) Output() []byte {
-	return r.Out
+	buf := bytes.Buffer{}
+	fmt.Fprintf(&buf, "$ %s\n", r.Command)
+	buf.Write(r.Out)
+	if !bytes.HasSuffix(r.Out, []byte("\n")) {
+		buf.WriteString("\n")
+	}
+	return buf.Bytes()
 }
 func (r *Result) ExitCode() int {
 	return r.Code
