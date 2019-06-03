@@ -1,4 +1,4 @@
-package scripts
+package executors
 
 import "github.com/yuuki0xff/clustertest/models"
 

@@ -4,9 +4,9 @@ import (
 	"github.com/spf13/cobra"
 	. "github.com/yuuki0xff/clustertest/cmdutils"
 	"github.com/yuuki0xff/clustertest/config"
+	"github.com/yuuki0xff/clustertest/executors"
 	"github.com/yuuki0xff/clustertest/provisioners"
 	_ "github.com/yuuki0xff/clustertest/provisioners/proxmoxve"
-	"github.com/yuuki0xff/clustertest/scripts"
 	_ "github.com/yuuki0xff/clustertest/scripts/localshell"
 )
 
@@ -39,9 +39,9 @@ func taskCreateFn(cmd *cobra.Command, args []string) error {
 			}
 
 			sets := pro.ScriptSets()
-			scripts.ExecuteBefore(pro, sets)
-			scripts.ExecuteMain(pro, sets)
-			scripts.ExecuteAfter(pro, sets)
+			executors.ExecuteBefore(pro, sets)
+			executors.ExecuteMain(pro, sets)
+			executors.ExecuteAfter(pro, sets)
 
 			err = pro.Delete()
 			if err != nil {
