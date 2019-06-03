@@ -93,9 +93,11 @@ func (r *MultiResult) ExitCode() int {
 	return r.lastResult().ExitCode()
 }
 func (r *MultiResult) firstResult() models.ScriptResult {
+	// TODO: check length
 	return r.results[0]
 }
 func (r *MultiResult) lastResult() models.ScriptResult {
+	// TODO: check length
 	return r.results[len(r.results)-1]
 }
 
