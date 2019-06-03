@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/yuuki0xff/clustertest/executors/localshell"
 	"github.com/yuuki0xff/clustertest/models"
 	"github.com/yuuki0xff/clustertest/provisioners"
 	"github.com/yuuki0xff/clustertest/provisioners/proxmoxve/addresspool"
@@ -196,7 +197,7 @@ func (p *PveProvisioner) ScriptExecutor(scriptType models.ScriptType) models.Scr
 	case models.ScriptType("remote-shell"):
 		// todo: use default impl
 	case models.ScriptType("local-shell"):
-		// todo: use default impl
+		return &localshell.Executor{}
 	default:
 		// todo: not implemented
 	}
