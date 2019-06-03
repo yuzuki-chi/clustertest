@@ -117,7 +117,7 @@ func (r *Result) Output() []byte {
 	buf := bytes.Buffer{}
 	fmt.Fprintf(&buf, "$ %s\n", r.Command)
 	buf.Write(r.Out)
-	if !bytes.HasSuffix(r.Out, []byte("\n")) {
+	if len(r.Out) > 0 && !bytes.HasSuffix(r.Out, []byte("\n")) {
 		buf.WriteString("\n")
 	}
 	return buf.Bytes()
