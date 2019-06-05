@@ -16,6 +16,7 @@ func init() {
 
 type Script struct {
 	Commands []string
+	attr     map[interface{}]interface{}
 }
 
 func (*Script) String() string {
@@ -23,4 +24,10 @@ func (*Script) String() string {
 }
 func (*Script) Type() models.ScriptType {
 	return scriptType
+}
+func (s *Script) SetAttr(key, value interface{}) {
+	s.attr[key] = value
+}
+func (s *Script) GetAttr(key interface{}) interface{} {
+	return s.attr[key]
 }

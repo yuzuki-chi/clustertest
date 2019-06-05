@@ -113,3 +113,9 @@ func (s *fakeScript) String() string {
 func (*fakeScript) Type() models.ScriptType {
 	return models.ScriptType("fake_script")
 }
+func (*fakeScript) SetAttr(key, value interface{}) {
+	panic("not implemented")
+}
+func (*fakeScript) GetAttr(key interface{}) interface{} {
+	panic("not implemented")
+}

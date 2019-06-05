@@ -22,6 +22,10 @@ type Script interface {
 	fmt.Stringer
 	// Type returns type name of this script.
 	Type() ScriptType
+	// SetAttr sets an attribute.
+	SetAttr(key, value interface{})
+	// GetAttr gets a value from attributes.
+	GetAttr(key interface{}) interface{}
 	// Type specific methods
 	// ...
 }
