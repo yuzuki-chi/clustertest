@@ -37,7 +37,9 @@ func (e *Executor) Execute(script models.Script) models.ScriptResult {
 	return executeMany(s.Commands)
 }
 func executeMany(cmds []string) models.ScriptResult {
-	mr := &executors.MergedResult{}
+	mr := &executors.MergedResult{
+		WithoutSeparator: true,
+	}
 	for _, cmd := range cmds {
 		result := execute(cmd)
 		mr.Append(result)

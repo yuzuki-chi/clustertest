@@ -6,8 +6,12 @@ import (
 	"time"
 )
 
+const DefaultSeparator = "================================\n"
+
 type MergedResult struct {
-	results []models.ScriptResult
+	WithoutSeparator bool
+	Separator        string
+	results          []models.ScriptResult
 }
 
 func (mr *MergedResult) Append(result models.ScriptResult) {
@@ -43,7 +47,7 @@ func (mr *MergedResult) Output() []byte {
 	var buf bytes.Buffer
 	for i, r := range mr.results {
 		if i > 0 {
-			buf.WriteString("================================\n")
+			buf.WriteString(mr.getSeparator())
 		}
 		buf.Write(r.Output())
 	}
@@ -55,6 +59,15 @@ func (mr *MergedResult) ExitCode() int {
 	}
 	last := mr.results[len(mr.results)-1]
 	return last.ExitCode()
+}
+func (mr *MergedResult) getSeparator() string {
+	if mr.WithoutSeparator {
+		return ""
+	}
+	if mr.Separator == "" {
+		return DefaultSeparator
+	}
+	return mr.Separator
 }
 
 func minTime(ts []time.Time) time.Time {
