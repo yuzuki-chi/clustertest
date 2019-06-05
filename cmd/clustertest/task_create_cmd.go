@@ -8,6 +8,7 @@ import (
 	"github.com/yuuki0xff/clustertest/provisioners"
 	_ "github.com/yuuki0xff/clustertest/provisioners/proxmoxve"
 	_ "github.com/yuuki0xff/clustertest/scripts/localshell"
+	"os"
 )
 
 func taskCreateFn(cmd *cobra.Command, args []string) error {
@@ -39,9 +40,12 @@ func taskCreateFn(cmd *cobra.Command, args []string) error {
 			}
 
 			sets := pro.ScriptSets()
-			executors.ExecuteBefore(pro, sets)
-			executors.ExecuteMain(pro, sets)
-			executors.ExecuteAfter(pro, sets)
+			r := executors.ExecuteBefore(pro, sets)
+			os.Stdout.Write(r.Output())
+			r = executors.ExecuteMain(pro, sets)
+			os.Stdout.Write(r.Output())
+			r = executors.ExecuteAfter(pro, sets)
+			os.Stdout.Write(r.Output())
 
 			err = pro.Delete()
 			if err != nil {
