@@ -27,12 +27,11 @@ func ExecuteAfter(p models.Provisioner, sets []*models.ScriptSet) models.ScriptR
 }
 
 func executeAll(p models.Provisioner, scripts []models.Script) models.ScriptResult {
+	mr := &MergedResult{}
 	for _, s := range scripts {
 		e := p.ScriptExecutor(s.Type())
 		result := e.Execute(s)
-		// todo
-		_ = result
+		mr.Append(result)
 	}
-	// todo
-	panic("not impl")
+	return mr
 }
