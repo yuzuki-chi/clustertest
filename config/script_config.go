@@ -33,6 +33,15 @@ func (c *ScriptConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return nil, fmt.Errorf("unsupported type: %s", typeName)
 	})
 }
+func (c *ScriptConfig) SetAttrs(attrs map[interface{}]interface{}) *ScriptConfig {
+	s := c.Get()
+	if s != nil {
+		for key, value := range attrs {
+			s.SetAttr(key, value)
+		}
+	}
+	return c
+}
 func (c *ScriptConfig) Get() models.Script {
 	if c == nil {
 		return nil
