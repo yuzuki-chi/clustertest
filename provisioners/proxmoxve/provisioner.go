@@ -16,8 +16,10 @@ import (
 
 const CloneTimeout = 30 * time.Second
 
+const specType = models.SpecType("proxmox-ve")
+
 func init() {
-	provisioners.Provisioners[models.SpecType("proxmox-ve")] = func(spec models.Spec) models.Provisioner {
+	provisioners.Provisioners[specType] = func(spec models.Spec) models.Provisioner {
 		return &PveProvisioner{
 			spec: spec.(*PveSpec),
 		}
