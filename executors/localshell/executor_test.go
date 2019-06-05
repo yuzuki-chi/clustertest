@@ -22,11 +22,12 @@ func TestExecutor_Execute(t *testing.T) {
 			},
 		}
 		r := e.Execute(s)
-		assert.IsType(t, &MultiResult{}, r)
-		assert.Equal(t, 0, r.ExitCode())
-		assert.Equal(t, []byte(`$ echo foo
+		if !assert.NotNil(t, r) {
+			assert.Equal(t, 0, r.ExitCode())
+			assert.Equal(t, []byte(`$ echo foo
 foo
 `), r.Output())
+		}
 	})
 
 	t.Run("should_success_with_multiple_commands", func(t *testing.T) {
@@ -38,13 +39,14 @@ foo
 			},
 		}
 		r := e.Execute(s)
-		assert.IsType(t, &MultiResult{}, r)
-		assert.Equal(t, 0, r.ExitCode())
-		assert.Equal(t, []byte(`$ echo foo
+		if !assert.NotNil(t, r) {
+			assert.Equal(t, 0, r.ExitCode())
+			assert.Equal(t, []byte(`$ echo foo
 foo
 $ echo bar
 bar
 `), r.Output())
+		}
 	})
 
 	t.Run("should_stop_when_command_failed", func(t *testing.T) {
@@ -57,11 +59,12 @@ bar
 			},
 		}
 		r := e.Execute(s)
-		assert.IsType(t, &MultiResult{}, r)
-		assert.Equal(t, 1, r.ExitCode())
-		assert.Equal(t, []byte(`$ echo foo
+		if !assert.NotNil(t, r) {
+			assert.Equal(t, 1, r.ExitCode())
+			assert.Equal(t, []byte(`$ echo foo
 foo
 $ false
 `), r.Output())
+		}
 	})
 }

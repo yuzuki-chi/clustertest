@@ -3,6 +3,7 @@ package localshell
 import (
 	"bytes"
 	"fmt"
+	"github.com/yuuki0xff/clustertest/executors"
 	"github.com/yuuki0xff/clustertest/models"
 	"github.com/yuuki0xff/clustertest/scripts/localshell"
 	"os/exec"
@@ -12,11 +13,6 @@ import (
 const supportedType = models.ScriptType("local-shell")
 
 type Executor struct{}
-
-// MultiResult represents the execution result of multiple commands.
-type MultiResult struct {
-	results []models.ScriptResult
-}
 
 // Result represents an result.
 type Result struct {
@@ -40,11 +36,11 @@ func (e *Executor) Execute(script models.Script) models.ScriptResult {
 	s := script.(*localshell.Script)
 	return executeMany(s.Commands)
 }
-func executeMany(cmds []string) *MultiResult {
-	mr := &MultiResult{}
+func executeMany(cmds []string) models.ScriptResult {
+	mr := &executors.MergedResult{}
 	for _, cmd := range cmds {
 		result := execute(cmd)
-		mr.results = append(mr.results, result)
+		mr.Append(result)
 		if result.ExitCode() != 0 {
 			// Failed.  Stop jobs immediately.
 			return mr
@@ -69,36 +65,6 @@ func execute(cmd string) *Result {
 	r.Out = []byte(fmt.Sprintf("ERROR: %s", err.Error()))
 	r.Code = 1
 	return r
-}
-func (r *MultiResult) String() string {
-	return fmt.Sprintf("<LocalShellMultiResult>")
-}
-func (r *MultiResult) StartTime() time.Time {
-	return r.firstResult().StartTime()
-}
-func (r *MultiResult) EndTime() time.Time {
-	return r.lastResult().EndTime()
-}
-func (r *MultiResult) Host() string {
-	return r.lastResult().Host()
-}
-func (r *MultiResult) Output() []byte {
-	buf := bytes.Buffer{}
-	for _, r := range r.results {
-		buf.Write(r.Output())
-	}
-	return buf.Bytes()
-}
-func (r *MultiResult) ExitCode() int {
-	return r.lastResult().ExitCode()
-}
-func (r *MultiResult) firstResult() models.ScriptResult {
-	// TODO: check length
-	return r.results[0]
-}
-func (r *MultiResult) lastResult() models.ScriptResult {
-	// TODO: check length
-	return r.results[len(r.results)-1]
 }
 
 func (r *Result) String() string {
