@@ -26,7 +26,7 @@ func TestExecutor_Execute(t *testing.T) {
 			return
 		}
 		assert.Equal(t, 0, r.ExitCode())
-		assert.Equal(t, []byte(`$ echo foo
+		assert.Equal(t, []byte(`localhost$ echo foo
 foo
 `), r.Output())
 	})
@@ -44,9 +44,9 @@ foo
 			return
 		}
 		assert.Equal(t, 0, r.ExitCode())
-		assert.Equal(t, []byte(`$ echo foo
+		assert.Equal(t, []byte(`localhost$ echo foo
 foo
-$ echo bar
+localhost$ echo bar
 bar
 `), r.Output())
 	})
@@ -65,9 +65,9 @@ bar
 			return
 		}
 		assert.Equal(t, 1, r.ExitCode())
-		assert.Equal(t, []byte(`$ echo foo
+		assert.Equal(t, []byte(`localhost$ echo foo
 foo
-$ false
+localhost$ false
 `), r.Output())
 	})
 }

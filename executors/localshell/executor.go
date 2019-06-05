@@ -74,14 +74,14 @@ func (r *Result) StartTime() time.Time {
 	return r.Start
 }
 func (r *Result) Host() string {
-	panic("not implemented")
+	return "localhost"
 }
 func (r *Result) EndTime() time.Time {
 	return r.End
 }
 func (r *Result) Output() []byte {
 	buf := bytes.Buffer{}
-	fmt.Fprintf(&buf, "$ %s\n", r.Command)
+	fmt.Fprintf(&buf, "%s$ %s\n", r.Host(), r.Command)
 	buf.Write(r.Out)
 	if len(r.Out) > 0 && !bytes.HasSuffix(r.Out, []byte("\n")) {
 		buf.WriteString("\n")
