@@ -29,6 +29,9 @@ func ExecuteAfter(p models.Provisioner, sets []*models.ScriptSet) models.ScriptR
 func executeAll(p models.Provisioner, scripts []models.Script) models.ScriptResult {
 	mr := &MergedResult{}
 	for _, s := range scripts {
+		if s == nil {
+			continue
+		}
 		e := p.ScriptExecutor(s.Type())
 		result := e.Execute(s)
 		mr.Append(result)
