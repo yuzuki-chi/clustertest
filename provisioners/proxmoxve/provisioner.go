@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/yuuki0xff/clustertest/executors/localshell"
+	"github.com/yuuki0xff/clustertest/executors/remoteshell"
 	"github.com/yuuki0xff/clustertest/models"
 	"github.com/yuuki0xff/clustertest/provisioners"
 	"github.com/yuuki0xff/clustertest/provisioners/proxmoxve/addresspool"
@@ -195,7 +196,7 @@ func (p *PveProvisioner) ScriptSets() []*models.ScriptSet {
 func (p *PveProvisioner) ScriptExecutor(scriptType models.ScriptType) models.ScriptExecutor {
 	switch scriptType {
 	case models.ScriptType("remote-shell"):
-		// todo: use default impl
+		return &remoteshell.Executor{}
 	case models.ScriptType("local-shell"):
 		return &localshell.Executor{}
 	default:
