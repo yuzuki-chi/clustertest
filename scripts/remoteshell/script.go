@@ -10,7 +10,7 @@ const scriptType = models.ScriptType("remote-shell")
 
 func init() {
 	config.ScriptInitializers[scriptType] = func() models.Script {
-		return nil
+		return &Script{}
 	}
 }
 
