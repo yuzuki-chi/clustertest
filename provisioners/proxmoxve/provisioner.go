@@ -217,7 +217,8 @@ func (p *PveProvisioner) ScriptExecutor(scriptType models.ScriptType) models.Scr
 			return &localshell.Executor{}
 		}
 	default:
-		panic("not implemented")
+		err := errors.Errorf("unsupported ScriptType: %s", scriptType)
+		panic(err)
 	}
 
 	return &callback.Executor{
