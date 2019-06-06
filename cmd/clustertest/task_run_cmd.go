@@ -23,9 +23,6 @@ func taskRunFn(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// TODO: enqueue tasks
-
-	// DEBUG: create resources
 	for _, conf := range confs {
 		for _, s := range conf.Specs() {
 			pro, err := provisioners.New(s)
