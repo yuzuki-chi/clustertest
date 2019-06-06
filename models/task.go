@@ -10,10 +10,10 @@ type Task interface {
 }
 type TaskID interface {
 	fmt.Stringer
-	TaskID() string
 }
 type TaskDetail interface {
-	TaskID
+	fmt.Stringer
+	TaskID() TaskID
 	State() string
 	Result() TaskResult
 }
