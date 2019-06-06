@@ -17,6 +17,7 @@ import (
 )
 
 const CloneTimeout = 30 * time.Second
+const StartTimeout = 10 * time.Second
 const DeleteTImeout = 10 * time.Second
 
 const specType = models.SpecType("proxmox-ve")
@@ -136,6 +137,21 @@ func (p *PveProvisioner) Create() error {
 	// Update the InfraConfig.
 	p.config = conf
 
+	// Start all VMs.
+	for _, vms := range conf.VMs {
+		for _, vm := range vms {
+			task, err := c.StartVM(vm.ID)
+			if err != nil {
+				return err
+			}
+			ctx, _ := context.WithTimeout(context.Background(), StartTimeout)
+			err = task.Wait(ctx)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	// Check resource status.
 	for _, vms := range conf.VMs {
 		for _, vm := range vms {
@@ -143,7 +159,7 @@ func (p *PveProvisioner) Create() error {
 			if err != nil {
 				return err
 			}
-			if info.Status != "stopped" {
+			if info.Status != RunningVMStatus {
 				return fmt.Errorf("invalid status: %s (id=%s)", info.Status, vm.ID)
 			}
 			// OK
