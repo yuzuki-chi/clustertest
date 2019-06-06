@@ -34,7 +34,7 @@ var taskRunCmd = &cobra.Command{
 var taskStartCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start a task in background",
-	RunE:  notImplemented,
+	RunE:  taskStartFn,
 }
 var taskWaitCmd = &cobra.Command{
 	Use:   "wait",

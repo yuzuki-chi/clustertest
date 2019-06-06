@@ -4,7 +4,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	. "github.com/yuuki0xff/clustertest/cmdutils"
-	"github.com/yuuki0xff/clustertest/config"
 	"github.com/yuuki0xff/clustertest/executors"
 	"github.com/yuuki0xff/clustertest/models"
 	"github.com/yuuki0xff/clustertest/provisioners"
@@ -15,11 +14,7 @@ import (
 )
 
 func taskRunFn(cmd *cobra.Command, args []string) error {
-	if len(args) == 0 {
-		// Load a config file from "./".
-		args = []string{"./"}
-	}
-	confs, err := config.LoadFromDirsOrFiles(args)
+	confs, err := loadConfigs(args)
 	if err != nil {
 		ShowError(err)
 		return nil
