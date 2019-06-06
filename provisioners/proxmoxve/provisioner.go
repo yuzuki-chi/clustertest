@@ -115,7 +115,7 @@ func (p *PveProvisioner) Create() error {
 					err = c.UpdateConfig(to, &Config{
 						CPUCores:   vm.Processors,
 						CPUSockets: 1,
-						Memory:     vm.MemorySize * 1024,
+						Memory:     vm.MemorySize,
 						User:       p.spec.User.User,
 						SSHKeys:    p.spec.User.SSHPublicKey,
 						IPAddress:  addresspool.ToPveIPConf(s, ip),
