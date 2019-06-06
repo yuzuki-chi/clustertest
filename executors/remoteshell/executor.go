@@ -2,15 +2,19 @@ package remoteshell
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/yuuki0xff/clustertest/executors"
 	"github.com/yuuki0xff/clustertest/models"
 	"github.com/yuuki0xff/clustertest/scripts/remoteshell"
 	"os/exec"
+	"strings"
 	"time"
 )
 
 const supportedType = models.ScriptType("remote-shell")
+const WaitTimeout = 30 * time.Second
+const StartTimeout = 1 * time.Minute
 
 type Executor struct {
 	User string
@@ -36,6 +40,31 @@ func (e *Executor) Execute(script models.Script) models.ScriptResult {
 		err := fmt.Errorf("not supported type: %s does not support %s", e.Type(), script.Type())
 		panic(err)
 	}
+
+	// Wait for target host is available.
+	mr := &executors.MergedResult{}
+	ctx, _ := context.WithTimeout(context.Background(), StartTimeout)
+	timer := time.NewTimer(0)
+	for {
+		r := e.executeOne("echo OK CONNECTED")
+		if r.ExitCode() == 0 {
+			if strings.Contains(string(r.Output()), "\nOK CONNECTED\n") {
+				// Command succeeded.
+				break
+			}
+			// Received ExitCode(0). But message is not contain in response.
+		}
+		mr.Append(r)
+
+		timer.Reset(time.Second)
+		select {
+		case <-timer.C:
+		case <-ctx.Done():
+			return mr
+		}
+	}
+
+	// Execute commands
 	s := script.(*remoteshell.Script)
 	return e.executeMany(s.Commands)
 }
