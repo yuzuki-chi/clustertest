@@ -26,10 +26,15 @@ var taskCmd = &cobra.Command{
 		return InvalidArgument
 	},
 }
-var taskCreateCmd = &cobra.Command{
-	Use:   "create",
-	Short: "Create a task and enqueue it",
+var taskRunCmd = &cobra.Command{
+	Use:   "run",
+	Short: "Run a task and wait it",
 	RunE:  taskCreateFn,
+}
+var taskStartCmd = &cobra.Command{
+	Use:   "start",
+	Short: "Start a task in background",
+	RunE:  notImplemented,
 }
 var taskWaitCmd = &cobra.Command{
 	Use:   "wait",
@@ -54,7 +59,7 @@ var taskDeleteCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(taskCmd)
-	taskCmd.AddCommand(taskCreateCmd, taskWaitCmd, taskCancelCmd, taskOutputCmd, taskDeleteCmd)
+	taskCmd.AddCommand(taskRunCmd, taskStartCmd, taskWaitCmd, taskCancelCmd, taskOutputCmd, taskDeleteCmd)
 }
 
 func main() {
