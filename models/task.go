@@ -14,7 +14,7 @@ type TaskID interface {
 }
 type TaskDetail interface {
 	TaskID
-	State()
+	State() string
 	Result() TaskResult
 }
 type TaskResult interface {
