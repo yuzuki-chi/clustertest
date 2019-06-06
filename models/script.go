@@ -11,9 +11,14 @@ const NO_EXIT_CODE = int(math.MaxInt32)
 type ScriptType string
 
 type ScriptSet struct {
+	// (Optional) It will execute before execute main script.
+	// This script should prepare environment for main script (e.g. install software, create config files, build a cluster).
 	Before Script
-	Main   Script
-	After  Script
+	// (Optional) The main script.
+	Main Script
+	// (Optional) It will execute after executed main script.
+	// This script should execute post processing of main script (e.g. verify the result, collect statistics data, shutdown a cluster).
+	After Script
 }
 
 // Script represents contents of execution task.
