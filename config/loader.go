@@ -7,53 +7,38 @@ import (
 	"path"
 )
 
-// Load config files from directories/files.
-func LoadFromDirsOrFiles(paths []string) ([]*Config, error) {
+// Find config file paths from directories/files.
+func FindConfigFromDirsOrFiles(paths []string) ([]string, error) {
 	var dirs []string
 	var files []string
 
-	for _, path := range paths {
-		finfo, err := os.Stat(path)
+	for _, p := range paths {
+		finfo, err := os.Stat(p)
 		if err != nil {
 			return nil, err
 		}
 		if finfo.IsDir() {
-			dirs = append(dirs, path)
+			dirs = append(dirs, p)
 		} else {
-			files = append(files, path)
+			files = append(files, p)
 		}
 	}
 
-	tasks1, err := LoadFromDirs(dirs)
-	if err != nil {
-		return nil, err
-	}
-	tasks2, err := LoadFromFiles(files)
-	if err != nil {
-		return nil, err
-	}
-	tasks := append(tasks1, tasks2...)
-	return tasks, nil
-}
-
-// Load config files from directories.
-func LoadFromDirs(dirs []string) ([]*Config, error) {
-	var files []string
 	for _, dir := range dirs {
-		file := findByFileNmaes([]string{
+		f := findByFileNmaes([]string{
 			path.Join(dir, ".clustertest.yml"),
 			path.Join(dir, ".clustertest.yaml"),
 			path.Join(dir, "clustertest.yml"),
 			path.Join(dir, "clustertest.yaml"),
 		})
-		if file == "" {
+		if f == "" {
 			// no match
 			return nil, fmt.Errorf("not found config file on %s directory", dir)
 		}
-		// match
-		files = append(files, file)
+		files = append(files, f)
 	}
-	return LoadFromFiles(files)
+
+	return files, nil
 }
 
 // Load config files from files.
