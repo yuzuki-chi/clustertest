@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/hex"
@@ -17,9 +18,11 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 )
 
 const PveMaxVMID = 999999999
+const timeout = 10 * time.Second
 
 var reqLogger = log.New(ioutil.Discard, "", 0)
 
@@ -350,8 +353,9 @@ func (c *PveClient) ListAllVMs() ([]*VMInfo, error) {
 
 // DeleteVM deletes the VM.
 // If VM is running, it will be stop immediately and delete it.
-func (c *PveClient) DeleteVM(id NodeVMID) error {
-	return cmdutils.HandlePanic(func() error {
+func (c *PveClient) DeleteVM(id NodeVMID) (Task, error) {
+	var task Task
+	err := cmdutils.HandlePanic(func() error {
 		info, err := c.VMInfo(id)
 		if err != nil {
 			return err
@@ -359,26 +363,62 @@ func (c *PveClient) DeleteVM(id NodeVMID) error {
 		if info.Status == "running" {
 			// VM is running.
 			// Should stop VM before delete.
-			err = c.StopVM(id)
+			task, err = c.StopVM(id)
+			if err != nil {
+				return err
+			}
+			ctx, _ := context.WithTimeout(context.Background(), timeout)
+			err = task.Wait(ctx)
 			if err != nil {
 				return err
 			}
 		}
 
 		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s", id.NodeID, id.VMID)
-		_, err = c.req("DELETE", url, nil, nil)
+		taskID, err := c.reqTask("DELETE", url, nil, nil)
+		task = Task{
+			NodeID: id.NodeID,
+			TaskID: taskID,
+			Client: c,
+		}
 		return err
 	})
+	return task, err
+}
+
+// StartVM starts the VM.
+func (c *PveClient) StartVM(id NodeVMID) (Task, error) {
+	var task Task
+	err := cmdutils.HandlePanic(func() error {
+		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/status/start", id.NodeID, id.VMID)
+
+		taskID, err := c.reqTask("POST", url, nil, nil)
+		task = Task{
+			NodeID: id.NodeID,
+			TaskID: taskID,
+			Client: c,
+		}
+		return err
+	})
+	return task, err
 }
 
 // StopVM stops the VM immediately.  This operation is not safe.
 // This is akin to pulling the power plug of a running computer and may cause VM data corruption.
-func (c *PveClient) StopVM(id NodeVMID) error {
-	return cmdutils.HandlePanic(func() error {
+func (c *PveClient) StopVM(id NodeVMID) (Task, error) {
+	var task Task
+	err := cmdutils.HandlePanic(func() error {
 		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/status/stop", id.NodeID, id.VMID)
-		_, err := c.req("POST", url, nil, nil)
+
+		taskID, err := c.reqTask("POST", url, nil, nil)
+		task = Task{
+			NodeID: id.NodeID,
+			TaskID: taskID,
+			Client: c,
+		}
 		return err
 	})
+	return task, err
 }
 func (c *PveClient) req(method, path string, query interface{}, post interface{}) (*grequests.Response, error) {
 	url, option := c.ro(path, query, post)
@@ -406,6 +446,13 @@ func (c *PveClient) reqJSON(method, path string, query, post, js interface{}) er
 		return errors.Wrap(err, "failed to unmarshal")
 	}
 	return nil
+}
+func (c *PveClient) reqTask(method, path string, query, post interface{}) (TaskID, error) {
+	var taskID TaskID
+	data := struct{ Data interface{} }{&taskID}
+
+	err := c.reqJSON(method, path, query, post, &data)
+	return taskID, err
 }
 
 // ro built the RequestOptions.
