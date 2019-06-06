@@ -12,7 +12,7 @@ import (
 	"os"
 )
 
-func taskCreateFn(cmd *cobra.Command, args []string) error {
+func taskRunFn(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		// Load a config file from "./".
 		args = []string{"./"}

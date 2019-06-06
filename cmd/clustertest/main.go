@@ -29,7 +29,7 @@ var taskCmd = &cobra.Command{
 var taskRunCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run a task and wait it",
-	RunE:  taskCreateFn,
+	RunE:  taskRunFn,
 }
 var taskStartCmd = &cobra.Command{
 	Use:   "start",
