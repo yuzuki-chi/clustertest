@@ -23,6 +23,8 @@ import (
 
 const PveMaxVMID = 999999999
 const timeout = 10 * time.Second
+const StoppedVMStatus = VMStatus("stopped")
+const RunningVMStatus = VMStatus("running")
 
 var reqLogger = log.New(ioutil.Discard, "", 0)
 
@@ -52,6 +54,7 @@ type NodeVMID struct {
 	NodeID NodeID
 	VMID   VMID
 }
+type VMStatus string
 type NodeInfo struct {
 	ID NodeID `json:"node"`
 	// Number of available CPUs.
@@ -76,7 +79,7 @@ type VMInfo struct {
 	// Qemu process status.
 	// - stopped
 	// - running
-	Status string
+	Status VMStatus
 }
 type Config struct {
 	// CPU cores
