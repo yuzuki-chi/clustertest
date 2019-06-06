@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/yuuki0xff/clustertest/executors"
+	"github.com/yuuki0xff/clustertest/executors/callback"
 	"github.com/yuuki0xff/clustertest/executors/localshell"
 	"github.com/yuuki0xff/clustertest/executors/remoteshell"
 	"github.com/yuuki0xff/clustertest/models"
@@ -17,6 +19,7 @@ import (
 const CloneTimeout = 30 * time.Second
 
 const specType = models.SpecType("proxmox-ve")
+const vmConfigsAttrName = "provisioners/proxmox-ve/vm-configs"
 
 func init() {
 	provisioners.Provisioners[specType] = func(spec models.Spec) models.Provisioner {
@@ -185,26 +188,49 @@ func (p *PveProvisioner) Config() models.InfraConfig {
 }
 func (p *PveProvisioner) ScriptSets() []*models.ScriptSet {
 	var sets []*models.ScriptSet
-	for _, vmGroup := range p.spec.VMs {
+	for name, vmGroup := range p.spec.VMs {
+		attrs := map[interface{}]interface{}{
+			vmConfigsAttrName: p.config.VMs[name],
+		}
 		s := &models.ScriptSet{
-			Before: vmGroup.Scripts.Before.Get(),
-			Main:   vmGroup.Scripts.Main.Get(),
-			After:  vmGroup.Scripts.After.Get(),
+			Before: vmGroup.Scripts.Before.SetAttrs(attrs).Get(),
+			Main:   vmGroup.Scripts.Main.SetAttrs(attrs).Get(),
+			After:  vmGroup.Scripts.After.SetAttrs(attrs).Get(),
 		}
 		sets = append(sets, s)
 	}
 	return sets
 }
 func (p *PveProvisioner) ScriptExecutor(scriptType models.ScriptType) models.ScriptExecutor {
+	var newExecutor func(config *VMConfig, script models.Script) models.ScriptExecutor
+
 	switch scriptType {
 	case models.ScriptType("remote-shell"):
-		return &remoteshell.Executor{}
+		newExecutor = func(config *VMConfig, script models.Script) models.ScriptExecutor {
+			return &remoteshell.Executor{
+				User: p.spec.User.User,
+				Host: config.IP.String(),
+			}
+		}
 	case models.ScriptType("local-shell"):
-		return &localshell.Executor{}
+		newExecutor = func(config *VMConfig, script models.Script) models.ScriptExecutor {
+			return &localshell.Executor{}
+		}
 	default:
-		// todo: not implemented
+		panic("not implemented")
 	}
-	panic("not implemented")
+
+	return &callback.Executor{
+		Fn: func(script models.Script) models.ScriptResult {
+			mr := &executors.MergedResult{}
+			vmConfigs := script.GetAttr(vmConfigsAttrName).([]VMConfig)
+			for _, c := range vmConfigs {
+				e := newExecutor(&c, script)
+				mr.Append(e.Execute(script))
+			}
+			return mr
+		},
+	}
 }
 func (p *PveProvisioner) client() *PveClient {
 	px := p.spec.Proxmox
