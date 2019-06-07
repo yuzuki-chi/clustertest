@@ -28,6 +28,13 @@ type MemTaskResult struct {
 	after  models.ScriptResult
 }
 
+func NewMemTaskDB() *MemTaskDB {
+	return &MemTaskDB{
+		waiting:  map[string]models.Task{},
+		running:  map[string]struct{}{},
+		finished: map[string]models.TaskResult{},
+	}
+}
 func (db *MemTaskDB) Create(task models.Task) (models.TaskID, error) {
 	db.m.Lock()
 	defer db.m.Unlock()

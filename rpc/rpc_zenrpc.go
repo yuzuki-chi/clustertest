@@ -71,65 +71,9 @@ func (Server) SMD() smd.ServiceInfo {
 				},
 				Returns: smd.JSONSchema{
 					Description: ``,
-					Optional:    true,
+					Optional:    false,
 					Type:        smd.Object,
-					Properties: map[string]smd.Property{
-						"ExitCode": {
-							Description: ``,
-							Type:        smd.Integer,
-						},
-						"Before": {
-							Description: ``,
-							Ref:         "#/definitions/ScriptResult",
-							Type:        smd.Object,
-						},
-						"Main": {
-							Description: ``,
-							Ref:         "#/definitions/ScriptResult",
-							Type:        smd.Object,
-						},
-						"After": {
-							Description: ``,
-							Ref:         "#/definitions/ScriptResult",
-							Type:        smd.Object,
-						},
-					},
-					Definitions: map[string]smd.Definition{
-						"ScriptResult": {
-							Type: "object",
-							Properties: map[string]smd.Property{
-								"Start": {
-									Description: ``,
-									Ref:         "#/definitions/time.Time",
-									Type:        smd.Object,
-								},
-								"End": {
-									Description: ``,
-									Ref:         "#/definitions/time.Time",
-									Type:        smd.Object,
-								},
-								"Hostname": {
-									Description: ``,
-									Type:        smd.String,
-								},
-								"Out": {
-									Description: ``,
-									Type:        smd.Array,
-									Items: map[string]string{
-										"type": smd.Integer,
-									},
-								},
-								"Exit": {
-									Description: ``,
-									Type:        smd.Integer,
-								},
-							},
-						},
-						"time.Time": {
-							Type:       "object",
-							Properties: map[string]smd.Property{},
-						},
-					},
+					Properties:  map[string]smd.Property{},
 				},
 			},
 		},
