@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/yuuki0xff/clustertest/config"
@@ -35,12 +36,18 @@ func (w *Worker) Serve(ctx context.Context) error {
 	}
 }
 func (w *Worker) runTask(id models.TaskID, task models.Task) (models.TaskResult, error) {
+	result := &Result{}
+	fmt.Println("running", id, result)
+	defer func() {
+		js, _ := json.Marshal(result)
+		fmt.Println("finished", id, string(js))
+	}()
+
 	data := task.SpecData()
 	conf, err := config.LoadFromBytes(data)
 	if err != nil {
-		msg := fmt.Sprintf("failed to load spec: %s", err)
-		// TODO
-		panic(msg)
+		result.ErrorMsg = fmt.Sprintf("failed to load spec: %s", err)
+		return result, nil
 	}
 
 	// Create provisioners.
@@ -48,8 +55,8 @@ func (w *Worker) runTask(id models.TaskID, task models.Task) (models.TaskResult,
 	for _, s := range conf.Specs() {
 		pro, err := provisioners.New(s)
 		if err != nil {
-			// TODO
-			panic(err)
+			result.ErrorMsg = err.Error()
+			return result, nil
 		}
 		pros = append(pros, pro)
 	}
@@ -58,8 +65,8 @@ func (w *Worker) runTask(id models.TaskID, task models.Task) (models.TaskResult,
 	for _, pro := range pros {
 		err = pro.Create()
 		if err != nil {
-			// TODO
-			panic(err)
+			result.ErrorMsg = err.Error()
+			return result, nil
 		}
 	}
 
@@ -73,41 +80,45 @@ func (w *Worker) runTask(id models.TaskID, task models.Task) (models.TaskResult,
 		r := executors.ExecuteBefore(pro, sets)
 		before.Append(r)
 		if r.ExitCode() != 0 {
-			errors.Errorf("failed the \"before\" task: exitcode=%d", r.ExitCode())
-			// todo
-			panic("not impl")
+			result.ErrorMsg = fmt.Sprintf("failed the \"before\" task: exitcode=%d", r.ExitCode())
+			result.Before = NewScriptResult(&before)
+			return result, nil
 		}
 	}
+	result.Before = NewScriptResult(&before)
+
 	for _, pro := range pros {
 		sets := pro.ScriptSets()
 		r := executors.ExecuteMain(pro, sets)
 		main.Append(r)
 		if r.ExitCode() != 0 {
-			errors.Errorf("failed the \"main\" task: exitcode=%d", r.ExitCode())
-			// todo
-			panic("not impl")
+			result.ErrorMsg = fmt.Sprintf("failed the \"main\" task: exitcode=%d", r.ExitCode())
+			result.Main = NewScriptResult(&main)
+			return result, nil
 		}
 	}
+	result.Main = NewScriptResult(&main)
+
 	for _, pro := range pros {
 		sets := pro.ScriptSets()
 		r := executors.ExecuteAfter(pro, sets)
 		after.Append(r)
 		if r.ExitCode() != 0 {
-			errors.Errorf("failed the \"after\" task: exitcode=%d", r.ExitCode())
-			// todo
-			panic("not impl")
+			result.ErrorMsg = fmt.Sprintf("failed the \"after\" task: exitcode=%d", r.ExitCode())
+			result.After = NewScriptResult(&after)
+			return result, nil
 		}
 	}
+	result.After = NewScriptResult(&after)
 
 	// Delete resources.
 	for _, pro := range pros {
 		err = pro.Delete()
 		if err != nil {
-			// todo
-			panic("not impl")
+			result.ErrorMsg = err.Error()
+			return result, nil
 		}
 	}
 
-	// todo
-	panic("not impl")
+	return result, nil
 }
