@@ -7,9 +7,6 @@ import (
 	"github.com/yuuki0xff/clustertest/executors"
 	"github.com/yuuki0xff/clustertest/models"
 	"github.com/yuuki0xff/clustertest/provisioners"
-	_ "github.com/yuuki0xff/clustertest/provisioners/proxmoxve"
-	_ "github.com/yuuki0xff/clustertest/scripts/localshell"
-	_ "github.com/yuuki0xff/clustertest/scripts/remoteshell"
 	"os"
 )
 

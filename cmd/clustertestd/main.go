@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 	. "github.com/yuuki0xff/clustertest/cmdutils"
+	_ "github.com/yuuki0xff/clustertest/import_all"
 	"os"
 )
 
