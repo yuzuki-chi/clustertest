@@ -1,7 +1,10 @@
-all: format test build
+all: format generate test build
 
 format:
 	go fmt ./...
+
+generate:
+	go generate ./...
 
 test:
 	go test ./...

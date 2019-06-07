@@ -10,10 +10,7 @@ var rootCmd = &cobra.Command{
 	Use:              "clustertestd",
 	Short:            "Start clustertest daemon",
 	TraverseChildren: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		// TODO
-		panic("not implemented")
-	},
+	RunE:             rootCmdFn,
 }
 var statusCmd = &cobra.Command{
 	Use:   "status",
