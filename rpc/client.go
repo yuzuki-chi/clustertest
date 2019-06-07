@@ -64,7 +64,7 @@ func (c *Client) Delete(id models.TaskID) error {
 	panic("not impl")
 }
 func (c *Client) call(out interface{}, method string, args ...interface{}) error {
-	return c.client.CallFor(out, method, args...)
+	return c.client.CallFor(out, method, args)
 }
 func (c *Client) isTaskReady(id models.TaskID) (bool, error) {
 	var ready bool
