@@ -9,3 +9,11 @@ type SequenceTaskID struct {
 func (s *SequenceTaskID) String() string {
 	return fmt.Sprint(s.ID)
 }
+
+type StringTaskID struct {
+	ID string
+}
+
+func (s *StringTaskID) String() string {
+	return s.ID
+}

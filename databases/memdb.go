@@ -13,7 +13,7 @@ type MemTaskDB struct {
 	nextID   int
 	waiting  map[string]models.Task
 	running  map[string]struct{}
-	finished map[string]*MemTaskResult
+	finished map[string]models.TaskResult
 }
 type MemTask struct {
 	Spec []byte
@@ -89,6 +89,41 @@ func (db *MemTaskDB) Delete(id models.TaskID) error {
 		return nil
 	}
 	return errors.Errorf("not found task: %s", sid)
+}
+func (db *MemTaskDB) Consume(fn models.TaskConsumer) error {
+	var sid string
+	var task models.Task
+	var ok bool
+	// Get a task from waiting queue and move task to running.
+	db.m.Lock()
+	for sid, task = range db.waiting {
+		ok = true
+		break
+	}
+	if ok {
+		delete(db.waiting, sid)
+		db.running[sid] = struct{}{}
+	}
+	db.m.Unlock()
+
+	if !ok {
+		return models.QueueEmpty
+	}
+
+	// Consume a task.
+	id := &StringTaskID{ID: sid}
+	result, err := fn(id, task)
+	if err != nil {
+		// TODO
+		panic("not impl")
+	}
+
+	// Move task to finished.
+	db.m.Lock()
+	delete(db.running, sid)
+	db.finished[sid] = result
+	db.m.Unlock()
+	return nil
 }
 
 func (t *MemTask) String() string {
