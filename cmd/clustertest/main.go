@@ -40,7 +40,7 @@ var taskStartCmd = &cobra.Command{
 var taskWaitCmd = &cobra.Command{
 	Use:   "wait",
 	Short: "Wait for task to done",
-	RunE:  notImplemented,
+	RunE:  taskWaitFn,
 }
 var taskCancelCmd = &cobra.Command{
 	Use:   "cancel",
