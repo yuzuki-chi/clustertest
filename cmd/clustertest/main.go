@@ -50,7 +50,7 @@ var taskCancelCmd = &cobra.Command{
 var taskOutputCmd = &cobra.Command{
 	Use:   "output",
 	Short: "Show output data of a task",
-	RunE:  notImplemented,
+	RunE:  taskOutputFn,
 }
 var taskDeleteCmd = &cobra.Command{
 	Use:   "delete",
