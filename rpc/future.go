@@ -24,5 +24,8 @@ func (f *Future) State() string {
 	return "running"
 }
 func (f *Future) Result() models.TaskResult {
-	return f.result
+	if f.result != nil {
+		return f.result
+	}
+	return nil
 }
