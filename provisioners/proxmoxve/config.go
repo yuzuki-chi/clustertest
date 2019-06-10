@@ -42,6 +42,8 @@ type PveSpec struct {
 	VMs map[string]*struct {
 		// Template name.
 		Template string
+		// Pool name to which the VM belongs.
+		Pool string
 		// Number of VMs.
 		Nodes int
 		// Number of processors.

@@ -141,7 +141,7 @@ func (c *PveClient) RandomVMID() (VMID, error) {
 }
 
 // CloneVM creates a copy of virtual machine/template.
-func (c *PveClient) CloneVM(from, to NodeVMID, name, description string) (Task, error) {
+func (c *PveClient) CloneVM(from, to NodeVMID, name, description, pool string) (Task, error) {
 	var task Task
 	err := cmdutils.HandlePanic(func() error {
 		query := struct {
@@ -149,11 +149,13 @@ func (c *PveClient) CloneVM(from, to NodeVMID, name, description string) (Task, 
 			TargetNode  NodeID `url:"target"`
 			Name        string `url:"name"`
 			Description string `url:"description"`
+			Pool        string `url:"pool"`
 		}{
 			NewVMID:     to.VMID,
 			TargetNode:  to.NodeID,
 			Name:        name,
 			Description: description,
+			Pool:        pool,
 		}
 		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/clone", from.NodeID, from.VMID)
 
