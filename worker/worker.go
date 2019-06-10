@@ -53,7 +53,7 @@ func (w *Worker) runTask(id models.TaskID, task models.Task) (models.TaskResult,
 	// Create provisioners.
 	var pros []models.Provisioner
 	for _, s := range conf.Specs() {
-		pro, err := provisioners.New(s)
+		pro, err := provisioners.New(conf.Name, s)
 		if err != nil {
 			result.ErrorMsg = err.Error()
 			return result, nil

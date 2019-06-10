@@ -21,7 +21,7 @@ func taskRunFn(cmd *cobra.Command, args []string) error {
 		// Create provisioners.
 		var pros []models.Provisioner
 		for _, s := range conf.Specs() {
-			pro, err := provisioners.New(s)
+			pro, err := provisioners.New(conf.Name, s)
 			if err != nil {
 				ShowError(err)
 				return nil

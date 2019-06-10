@@ -24,14 +24,17 @@ const specType = models.SpecType("proxmox-ve")
 const vmConfigsAttrName = "provisioners/proxmox-ve/vm-configs"
 
 func init() {
-	provisioners.Provisioners[specType] = func(spec models.Spec) models.Provisioner {
+	provisioners.Provisioners[specType] = func(prefix string, spec models.Spec) models.Provisioner {
 		return &PveProvisioner{
-			spec: spec.(*PveSpec),
+			prefix: prefix,
+			spec:   spec.(*PveSpec),
 		}
 	}
 }
 
 type PveProvisioner struct {
+	// Prefix for all VM names
+	prefix string
 	spec   *PveSpec
 	config *PveInfraConfig
 }
@@ -95,7 +98,7 @@ func (p *PveProvisioner) Create() error {
 					})
 
 					// Clone specified VM and set up it.
-					vmName := fmt.Sprintf("%s-%s-%d", p.spec.Name, vmGroupName, i)
+					vmName := fmt.Sprintf("%s-%s-%s-%d", p.prefix, p.spec.Name, vmGroupName, i)
 					task, err := c.CloneVM(from, to, vmName, "This VM created by clustertest-proxmox-ve-provisioner", vm.Pool)
 					if err != nil {
 						return errors.Wrap(err, "failed to clone")
