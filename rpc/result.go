@@ -39,9 +39,24 @@ func (r *Result) Error() error {
 	}
 	return nil
 }
-func (r *Result) BeforeResult() models.ScriptResult { return r.Before }
-func (r *Result) ScriptResult() models.ScriptResult { return r.Main }
-func (r *Result) AfterResult() models.ScriptResult  { return r.After }
+func (r *Result) BeforeResult() models.ScriptResult {
+	if r.Before != nil {
+		return r.Before
+	}
+	return nil
+}
+func (r *Result) ScriptResult() models.ScriptResult {
+	if r.Main != nil {
+		return r.Main
+	}
+	return nil
+}
+func (r *Result) AfterResult() models.ScriptResult {
+	if r.After != nil {
+		return r.After
+	}
+	return nil
+}
 
 func (r *ScriptResult) String() string       { return "<ScriptResult>" }
 func (r *ScriptResult) StartTime() time.Time { return r.Start }
