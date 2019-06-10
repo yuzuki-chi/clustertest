@@ -107,12 +107,14 @@ func (p *PveProvisioner) Create() error {
 							"GroupName: %s\n"+
 							"Index: %d\n"+
 							"\n"+
-							"Created at %s\n",
+							"Created at %s\n"+
+							"IP: %s\n",
 						p.prefix,
 						p.spec.Name,
 						vmGroupName,
 						i,
 						time.Now().String(),
+						ip.String(),
 					)
 					task, err := c.CloneVM(from, to, vmName, description, vm.Pool)
 					if err != nil {
