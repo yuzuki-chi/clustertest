@@ -54,6 +54,11 @@ type singleResultRender struct{}
 func (render singleResultRender) Render(w io.Writer, d models.TaskDetail) {
 	fmt.Fprintf(w, "Status: %s\n", d.State())
 	tr := d.Result()
+	if tr == nil {
+		// Result is not available.
+		return
+	}
+
 	if err := tr.Error(); err != nil {
 		fmt.Fprintf(w, "Error: %s\n", err)
 	}
