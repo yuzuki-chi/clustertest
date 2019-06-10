@@ -12,3 +12,7 @@ test:
 build:
 	go build ./cmd/clustertest
 	go build ./cmd/clustertestd
+
+install:
+	go install ./cmd/clustertest
+	go install ./cmd/clustertestd
