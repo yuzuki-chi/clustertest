@@ -99,7 +99,22 @@ func (p *PveProvisioner) Create() error {
 
 					// Clone specified VM and set up it.
 					vmName := fmt.Sprintf("%s-%s-%s-%d", p.prefix, p.spec.Name, vmGroupName, i)
-					task, err := c.CloneVM(from, to, vmName, "This VM created by clustertest-proxmox-ve-provisioner", vm.Pool)
+					description := fmt.Sprintf(
+						"This VM created by clustertest-proxmox-ve-provisioner.\n"+
+							"\n"+
+							"TaskName: %s\n"+
+							"SpecName: %s\n"+
+							"GroupName: %s\n"+
+							"Index: %d\n"+
+							"\n"+
+							"Created at %s\n",
+						p.prefix,
+						p.spec.Name,
+						vmGroupName,
+						i,
+						time.Now().String(),
+					)
+					task, err := c.CloneVM(from, to, vmName, description, vm.Pool)
 					if err != nil {
 						return errors.Wrap(err, "failed to clone")
 					}
