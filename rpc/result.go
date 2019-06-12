@@ -30,6 +30,10 @@ func (t *TaskID) String() string {
 }
 
 func NewResult(id models.TaskID, tr models.TaskResult) *Result {
+	if tr == nil {
+		return nil
+	}
+
 	r := &Result{
 		ID:     TaskID{id.String()},
 		Before: NewScriptResult(tr.BeforeResult()),
