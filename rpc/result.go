@@ -11,12 +11,11 @@ type TaskID struct {
 	id string
 }
 type Result struct {
-	ExitCode int
-	Before   *ScriptResult
-	Main     *ScriptResult
-	After    *ScriptResult
-
-	id TaskID
+	ID     TaskID
+	ErrMsg string
+	Before *ScriptResult
+	Main   *ScriptResult
+	After  *ScriptResult
 }
 type ScriptResult struct {
 	Start    time.Time
@@ -30,12 +29,24 @@ func (t *TaskID) String() string {
 	return t.id
 }
 
+func NewResult(id models.TaskID, tr models.TaskResult) *Result {
+	r := &Result{
+		ID:     TaskID{id.String()},
+		Before: NewScriptResult(tr.BeforeResult()),
+		Main:   NewScriptResult(tr.ScriptResult()),
+		After:  NewScriptResult(tr.AfterResult()),
+	}
+	if err := tr.Error(); err != nil {
+		r.ErrMsg = err.Error()
+	}
+	return r
+}
 func (r *Result) String() string {
-	return fmt.Sprintf("<Result %s>", r.id.String())
+	return fmt.Sprintf("<Result %s>", r.ID.String())
 }
 func (r *Result) Error() error {
-	if r.ExitCode != 0 {
-		return errors.Errorf("command failed with exit code %d", r.ExitCode)
+	if r.ErrMsg != "" {
+		return errors.New(r.ErrMsg)
 	}
 	return nil
 }
@@ -58,6 +69,18 @@ func (r *Result) AfterResult() models.ScriptResult {
 	return nil
 }
 
+func NewScriptResult(r models.ScriptResult) *ScriptResult {
+	if r == nil {
+		return nil
+	}
+	return &ScriptResult{
+		Start:    r.StartTime(),
+		End:      r.EndTime(),
+		Hostname: r.Host(),
+		Out:      r.Output(),
+		Exit:     r.ExitCode(),
+	}
+}
 func (r *ScriptResult) String() string       { return "<ScriptResult>" }
 func (r *ScriptResult) StartTime() time.Time { return r.Start }
 func (r *ScriptResult) EndTime() time.Time   { return r.End }
