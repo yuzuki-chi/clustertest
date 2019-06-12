@@ -29,9 +29,24 @@ func (r *Result) Error() error {
 	}
 	return errors.New(r.ErrorMsg)
 }
-func (r *Result) BeforeResult() models.ScriptResult { return r.Before }
-func (r *Result) ScriptResult() models.ScriptResult { return r.Main }
-func (r *Result) AfterResult() models.ScriptResult  { return r.After }
+func (r *Result) BeforeResult() models.ScriptResult {
+	if r.Before == nil {
+		return nil
+	}
+	return r.Before
+}
+func (r *Result) ScriptResult() models.ScriptResult {
+	if r.Main == nil {
+		return nil
+	}
+	return r.Main
+}
+func (r *Result) AfterResult() models.ScriptResult {
+	if r.After == nil {
+		return nil
+	}
+	return r.After
+}
 
 func NewScriptResult(result models.ScriptResult) *ScriptResult {
 	return &ScriptResult{
