@@ -11,6 +11,7 @@ type TaskDB interface {
 	Wait(id TaskID, ctx context.Context) error
 	Cancel(id TaskID) error
 	Delete(id TaskID) error
+	List() ([]TaskDetail, error)
 }
 
 type TaskQueue interface {

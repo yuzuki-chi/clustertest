@@ -132,6 +132,30 @@ func (db *MemTaskDB) Consume(fn models.TaskConsumer) error {
 	db.m.Unlock()
 	return nil
 }
+func (db *MemTaskDB) List() ([]models.TaskDetail, error) {
+	db.m.Lock()
+	defer db.m.Unlock()
+
+	var ids []string
+	for id := range db.waiting {
+		ids = append(ids, id)
+	}
+	for id := range db.running {
+		ids = append(ids, id)
+	}
+	for id := range db.finished {
+		ids = append(ids, id)
+	}
+
+	var ds []models.TaskDetail
+	for _, id := range ids {
+		ds = append(ds, &MemTaskDetail{
+			ID: &StringTaskID{id},
+			DB: db,
+		})
+	}
+	return ds, nil
+}
 
 func (t *MemTask) String() string {
 	return "<MemTask>"

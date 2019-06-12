@@ -83,8 +83,16 @@ func (Server) SMD() smd.ServiceInfo {
 				Returns: smd.JSONSchema{
 					Description: ``,
 					Optional:    false,
-					Type:        smd.Object,
-					Properties:  map[string]smd.Property{},
+					Type:        smd.Array,
+					Items: map[string]string{
+						"$ref": "#/definitions/models.TaskDetail",
+					},
+					Definitions: map[string]smd.Definition{
+						"models.TaskDetail": {
+							Type:       "object",
+							Properties: map[string]smd.Property{},
+						},
+					},
 				},
 			},
 		},
