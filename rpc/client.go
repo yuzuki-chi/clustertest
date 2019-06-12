@@ -33,7 +33,7 @@ func (c *Client) List() ([]models.TaskDetail, error) {
 }
 func (c *Client) Inspect(id models.TaskID) (models.TaskDetail, error) {
 	var err error
-	future := &Future{}
+	future := &Detail{}
 	future.id = id
 	future.ready, err = c.isTaskReady(id)
 	if err != nil {
@@ -80,15 +80,15 @@ func (c *Client) taskResult(id models.TaskID) (*Result, error) {
 	return result, err
 }
 func (c *Client) listTasks() ([]models.TaskDetail, error) {
-	var futures []*Future
-	err := c.call(&futures, "list_tasks")
+	var ds []*Detail
+	err := c.call(&ds, "list_tasks")
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert []*Future to []models.TaskDetail.
+	// Convert []*Detail to []models.TaskDetail.
 	var details []models.TaskDetail
-	for _, f := range futures {
+	for _, f := range ds {
 		details = append(details, f)
 	}
 	return details, nil
