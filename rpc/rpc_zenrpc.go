@@ -11,10 +11,11 @@ import (
 )
 
 var RPC = struct {
-	Server struct{ Run_Task, Is_Ready_Task, Get_Task_Result, List_Tasks string }
+	Server struct{ Run_Task, Task_Status, Is_Ready_Task, Get_Task_Result, List_Tasks string }
 }{
-	Server: struct{ Run_Task, Is_Ready_Task, Get_Task_Result, List_Tasks string }{
+	Server: struct{ Run_Task, Task_Status, Is_Ready_Task, Get_Task_Result, List_Tasks string }{
 		Run_Task:        "run_task",
+		Task_Status:     "task_status",
 		Is_Ready_Task:   "is_ready_task",
 		Get_Task_Result: "get_task_result",
 		List_Tasks:      "list_tasks",
@@ -36,6 +37,22 @@ func (Server) SMD() smd.ServiceInfo {
 						Items: map[string]string{
 							"type": smd.Integer,
 						},
+					},
+				},
+				Returns: smd.JSONSchema{
+					Description: ``,
+					Optional:    false,
+					Type:        smd.String,
+				},
+			},
+			"Task_Status": {
+				Description: ``,
+				Parameters: []smd.JSONSchema{
+					{
+						Name:        "id",
+						Optional:    false,
+						Description: ``,
+						Type:        smd.String,
 					},
 				},
 				Returns: smd.JSONSchema{
@@ -159,6 +176,93 @@ func (Server) SMD() smd.ServiceInfo {
 					},
 					Definitions: map[string]smd.Definition{
 						"Detail": {
+							Type: "object",
+							Properties: map[string]smd.Property{
+								"ID": {
+									Description: ``,
+									Ref:         "#/definitions/TaskID",
+									Type:        smd.Object,
+								},
+								"StatusStr": {
+									Description: ``,
+									Type:        smd.String,
+								},
+								"ResultObj": {
+									Description: ``,
+									Ref:         "#/definitions/Result",
+									Type:        smd.Object,
+								},
+							},
+						},
+						"TaskID": {
+							Type: "object",
+							Properties: map[string]smd.Property{
+								"ID": {
+									Description: ``,
+									Type:        smd.String,
+								},
+							},
+						},
+						"Result": {
+							Type: "object",
+							Properties: map[string]smd.Property{
+								"ID": {
+									Description: ``,
+									Ref:         "#/definitions/TaskID",
+									Type:        smd.Object,
+								},
+								"ErrMsg": {
+									Description: ``,
+									Type:        smd.String,
+								},
+								"Before": {
+									Description: ``,
+									Ref:         "#/definitions/ScriptResult",
+									Type:        smd.Object,
+								},
+								"Main": {
+									Description: ``,
+									Ref:         "#/definitions/ScriptResult",
+									Type:        smd.Object,
+								},
+								"After": {
+									Description: ``,
+									Ref:         "#/definitions/ScriptResult",
+									Type:        smd.Object,
+								},
+							},
+						},
+						"ScriptResult": {
+							Type: "object",
+							Properties: map[string]smd.Property{
+								"Start": {
+									Description: ``,
+									Ref:         "#/definitions/time.Time",
+									Type:        smd.Object,
+								},
+								"End": {
+									Description: ``,
+									Ref:         "#/definitions/time.Time",
+									Type:        smd.Object,
+								},
+								"Hostname": {
+									Description: ``,
+									Type:        smd.String,
+								},
+								"Out": {
+									Description: ``,
+									Type:        smd.Array,
+									Items: map[string]string{
+										"type": smd.Integer,
+									},
+								},
+								"Exit": {
+									Description: ``,
+									Type:        smd.Integer,
+								},
+							},
+						},
+						"time.Time": {
 							Type:       "object",
 							Properties: map[string]smd.Property{},
 						},
@@ -193,6 +297,25 @@ func (s Server) Invoke(ctx context.Context, method string, params json.RawMessag
 		}
 
 		resp.Set(s.Run_Task(args.Spec))
+
+	case RPC.Server.Task_Status:
+		var args = struct {
+			Id string `json:"id"`
+		}{}
+
+		if zenrpc.IsArray(params) {
+			if params, err = zenrpc.ConvertToObject([]string{"id"}, params); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		if len(params) > 0 {
+			if err := json.Unmarshal(params, &args); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		resp.Set(s.Task_Status(args.Id))
 
 	case RPC.Server.Is_Ready_Task:
 		var args = struct {

@@ -25,6 +25,11 @@ type ScriptResult struct {
 	Exit     int
 }
 
+func NewTaskID(id models.TaskID) *TaskID {
+	return &TaskID{
+		ID: id.String(),
+	}
+}
 func (t *TaskID) String() string {
 	return t.ID
 }

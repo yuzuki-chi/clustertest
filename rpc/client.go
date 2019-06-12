@@ -34,12 +34,12 @@ func (c *Client) List() ([]models.TaskDetail, error) {
 func (c *Client) Inspect(id models.TaskID) (models.TaskDetail, error) {
 	var err error
 	future := &Detail{}
-	future.id = id
-	future.ready, err = c.isTaskReady(id)
+	future.ID = NewTaskID(id)
+	future.StatusStr, err = c.taskStatus(id)
 	if err != nil {
 		return nil, err
 	}
-	future.result, err = c.taskResult(id)
+	future.ResultObj, err = c.taskResult(id)
 	if err != nil {
 		return nil, err
 	}
@@ -68,6 +68,11 @@ func (c *Client) Delete(id models.TaskID) error {
 }
 func (c *Client) call(out interface{}, method string, args ...interface{}) error {
 	return c.client.CallFor(out, method, args)
+}
+func (c *Client) taskStatus(id models.TaskID) (string, error) {
+	var s string
+	err := c.call(&s, "task_status", id.String())
+	return s, err
 }
 func (c *Client) isTaskReady(id models.TaskID) (bool, error) {
 	var ready bool

@@ -31,7 +31,7 @@ func (s *Server) Run_Task(spec []byte) string {
 	}
 	return id.String()
 }
-func (s *Server) Is_Ready_Task(id string) bool {
+func (s *Server) Task_Status(id string) string {
 	tid := &databases.StringTaskID{
 		ID: id,
 	}
@@ -39,7 +39,10 @@ func (s *Server) Is_Ready_Task(id string) bool {
 	if err != nil {
 		panic(err)
 	}
-	return detail.State() == "finished"
+	return detail.State()
+}
+func (s *Server) Is_Ready_Task(id string) bool {
+	return s.Task_Status(id) == "finished"
 }
 func (s *Server) Get_Task_Result(id string) *Result {
 	tid := &databases.StringTaskID{
