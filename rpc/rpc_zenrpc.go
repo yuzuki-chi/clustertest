@@ -11,12 +11,13 @@ import (
 )
 
 var RPC = struct {
-	Server struct{ Run_Task, Is_Ready_Task, Get_Task_Result string }
+	Server struct{ Run_Task, Is_Ready_Task, Get_Task_Result, List_Tasks string }
 }{
-	Server: struct{ Run_Task, Is_Ready_Task, Get_Task_Result string }{
+	Server: struct{ Run_Task, Is_Ready_Task, Get_Task_Result, List_Tasks string }{
 		Run_Task:        "run_task",
 		Is_Ready_Task:   "is_ready_task",
 		Get_Task_Result: "get_task_result",
+		List_Tasks:      "list_tasks",
 	},
 }
 
@@ -69,6 +70,16 @@ func (Server) SMD() smd.ServiceInfo {
 						Type:        smd.String,
 					},
 				},
+				Returns: smd.JSONSchema{
+					Description: ``,
+					Optional:    false,
+					Type:        smd.Object,
+					Properties:  map[string]smd.Property{},
+				},
+			},
+			"List_Tasks": {
+				Description: ``,
+				Parameters:  []smd.JSONSchema{},
 				Returns: smd.JSONSchema{
 					Description: ``,
 					Optional:    false,
@@ -142,6 +153,9 @@ func (s Server) Invoke(ctx context.Context, method string, params json.RawMessag
 		}
 
 		resp.Set(s.Get_Task_Result(args.Id))
+
+	case RPC.Server.List_Tasks:
+		resp.Set(s.List_Tasks())
 
 	default:
 		resp = zenrpc.NewResponseError(nil, zenrpc.MethodNotFound, "", nil)

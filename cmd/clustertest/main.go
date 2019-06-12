@@ -42,6 +42,11 @@ var taskWaitCmd = &cobra.Command{
 	Short: "Wait for task to done",
 	RunE:  taskWaitFn,
 }
+var taskListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List tasks",
+	RunE:  taskListFn,
+}
 var taskCancelCmd = &cobra.Command{
 	Use:   "cancel",
 	Short: "Cancel tasks",
@@ -60,7 +65,7 @@ var taskDeleteCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(taskCmd)
-	taskCmd.AddCommand(taskRunCmd, taskStartCmd, taskWaitCmd, taskCancelCmd, taskOutputCmd, taskDeleteCmd)
+	taskCmd.AddCommand(taskRunCmd, taskStartCmd, taskWaitCmd, taskListCmd, taskCancelCmd, taskOutputCmd, taskDeleteCmd)
 }
 
 func main() {

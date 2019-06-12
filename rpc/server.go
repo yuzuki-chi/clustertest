@@ -51,3 +51,7 @@ func (s *Server) Get_Task_Result(id string) models.TaskResult {
 	}
 	return detail.Result()
 }
+func (s *Server) List_Tasks() models.TaskDetail {
+	// TODO
+	return nil
+}

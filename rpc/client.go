@@ -28,6 +28,9 @@ func (c *Client) Create(task models.Task) (models.TaskID, error) {
 	}
 	return &TaskID{id}, err
 }
+func (c *Client) List() ([]models.TaskDetail, error) {
+	return c.listTasks()
+}
 func (c *Client) Inspect(id models.TaskID) (models.TaskDetail, error) {
 	var err error
 	future := &Future{}
@@ -75,4 +78,18 @@ func (c *Client) taskResult(id models.TaskID) (*Result, error) {
 	result := &Result{}
 	err := c.call(&result, "get_task_result", id.String())
 	return result, err
+}
+func (c *Client) listTasks() ([]models.TaskDetail, error) {
+	var futures []*Future
+	err := c.call(&futures, "list_tasks")
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert []*Future to []models.TaskDetail.
+	var details []models.TaskDetail
+	for _, f := range futures {
+		details = append(details, f)
+	}
+	return details, nil
 }
