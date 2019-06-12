@@ -1,75 +1,66 @@
 package main
 
 import (
-	"github.com/pkg/errors"
+	"context"
 	"github.com/spf13/cobra"
 	. "github.com/yuuki0xff/clustertest/cmdutils"
-	"github.com/yuuki0xff/clustertest/executors"
 	"github.com/yuuki0xff/clustertest/models"
-	"github.com/yuuki0xff/clustertest/provisioners"
+	"github.com/yuuki0xff/clustertest/rpc"
 	"os"
 )
 
 func taskRunFn(cmd *cobra.Command, args []string) error {
-	confs, err := loadConfigs(args)
+	c, err := rpc.NewClient()
 	if err != nil {
 		ShowError(err)
 		return nil
 	}
 
-	for _, conf := range confs {
-		// Create provisioners.
-		var pros []models.Provisioner
-		for _, s := range conf.Specs() {
-			pro, err := provisioners.New(conf.Name, s)
-			if err != nil {
-				ShowError(err)
-				return nil
-			}
-			pros = append(pros, pro)
+	files, err := findConfigs(args)
+	if err != nil {
+		ShowError(err)
+		return nil
+	}
+
+	var ids []models.TaskID
+	for _, file := range files {
+		task, err := newTaskFromFile(file)
+		if err != nil {
+			ShowError(err)
+			return nil
 		}
 
-		// Create resources.
-		for _, pro := range pros {
-			err = pro.Create()
-			if err != nil {
-				ShowError(err)
-				return nil
-			}
+		id, err := c.Create(task)
+		if err != nil {
+			ShowError(err)
+			return nil
 		}
+		ids = append(ids, id)
+	}
 
-		// Run scripts.
-		for _, pro := range pros {
-			sets := pro.ScriptSets()
-			r := executors.ExecuteBefore(pro, sets)
-			os.Stdout.Write(r.Output())
-			if r.ExitCode() != 0 {
-				ShowError(errors.Errorf("failed the \"before\" task: exitcode=%d", r.ExitCode()))
-				return nil
-			}
-			r = executors.ExecuteMain(pro, sets)
-			os.Stdout.Write(r.Output())
-			if r.ExitCode() != 0 {
-				ShowError(errors.Errorf("failed the \"main\" task: exitcode=%d", r.ExitCode()))
-				return nil
-			}
-			r = executors.ExecuteAfter(pro, sets)
-			os.Stdout.Write(r.Output())
-			if r.ExitCode() != 0 {
-				ShowError(errors.Errorf("failed the \"after\" task: exitcode=%d", r.ExitCode()))
-				return nil
-			}
-		}
-
-		// Delete resources.
-		for _, pro := range pros {
-			err = pro.Delete()
-			if err != nil {
-				ShowError(err)
-				return nil
-			}
+	for _, id := range ids {
+		err := c.Wait(id, context.Background())
+		if err != nil {
+			ShowError(err)
+			return nil
 		}
 	}
 
+	var render resultRender
+	if len(ids) > 1 {
+		render = &multipleResultRender{}
+	} else {
+		render = &singleResultRender{}
+	}
+
+	for _, id := range ids {
+		d, err := c.Inspect(id)
+		if err != nil {
+			ShowError(err)
+			return nil
+		}
+
+		render.Render(os.Stdout, d)
+	}
 	return nil
 }
