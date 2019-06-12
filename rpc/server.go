@@ -41,7 +41,7 @@ func (s *Server) Is_Ready_Task(id string) bool {
 	}
 	return detail.State() == "finished"
 }
-func (s *Server) Get_Task_Result(id string) models.TaskResult {
+func (s *Server) Get_Task_Result(id string) *Result {
 	tid := &databases.StringTaskID{
 		ID: id,
 	}
@@ -49,12 +49,18 @@ func (s *Server) Get_Task_Result(id string) models.TaskResult {
 	if err != nil {
 		panic(err)
 	}
-	return detail.Result()
+	return NewResult(&TaskID{id}, detail.Result())
 }
-func (s *Server) List_Tasks() []models.TaskDetail {
+func (s *Server) List_Tasks() []*Detail {
 	tasks, err := s.DB.List()
 	if err != nil {
 		panic(err)
 	}
-	return tasks
+
+	// Convert models.TaskDetail to []*Detail
+	var ds []*Detail
+	for _, t := range tasks {
+		ds = append(ds, NewDetail(t))
+	}
+	return ds
 }

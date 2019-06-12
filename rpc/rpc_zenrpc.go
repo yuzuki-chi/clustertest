@@ -72,9 +72,74 @@ func (Server) SMD() smd.ServiceInfo {
 				},
 				Returns: smd.JSONSchema{
 					Description: ``,
-					Optional:    false,
+					Optional:    true,
 					Type:        smd.Object,
-					Properties:  map[string]smd.Property{},
+					Properties: map[string]smd.Property{
+						"ID": {
+							Description: ``,
+							Ref:         "#/definitions/TaskID",
+							Type:        smd.Object,
+						},
+						"ErrMsg": {
+							Description: ``,
+							Type:        smd.String,
+						},
+						"Before": {
+							Description: ``,
+							Ref:         "#/definitions/ScriptResult",
+							Type:        smd.Object,
+						},
+						"Main": {
+							Description: ``,
+							Ref:         "#/definitions/ScriptResult",
+							Type:        smd.Object,
+						},
+						"After": {
+							Description: ``,
+							Ref:         "#/definitions/ScriptResult",
+							Type:        smd.Object,
+						},
+					},
+					Definitions: map[string]smd.Definition{
+						"TaskID": {
+							Type:       "object",
+							Properties: map[string]smd.Property{},
+						},
+						"ScriptResult": {
+							Type: "object",
+							Properties: map[string]smd.Property{
+								"Start": {
+									Description: ``,
+									Ref:         "#/definitions/time.Time",
+									Type:        smd.Object,
+								},
+								"End": {
+									Description: ``,
+									Ref:         "#/definitions/time.Time",
+									Type:        smd.Object,
+								},
+								"Hostname": {
+									Description: ``,
+									Type:        smd.String,
+								},
+								"Out": {
+									Description: ``,
+									Type:        smd.Array,
+									Items: map[string]string{
+										"type": smd.Integer,
+									},
+								},
+								"Exit": {
+									Description: ``,
+									Type:        smd.Integer,
+								},
+							},
+						},
+						"time.Time": {
+							Type:       "object",
+							Properties: map[string]smd.Property{},
+						},
+					},
 				},
 			},
 			"List_Tasks": {
@@ -85,10 +150,10 @@ func (Server) SMD() smd.ServiceInfo {
 					Optional:    false,
 					Type:        smd.Array,
 					Items: map[string]string{
-						"$ref": "#/definitions/models.TaskDetail",
+						"$ref": "#/definitions/Detail",
 					},
 					Definitions: map[string]smd.Definition{
-						"models.TaskDetail": {
+						"Detail": {
 							Type:       "object",
 							Properties: map[string]smd.Property{},
 						},
