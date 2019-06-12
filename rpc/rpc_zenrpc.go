@@ -102,8 +102,13 @@ func (Server) SMD() smd.ServiceInfo {
 					},
 					Definitions: map[string]smd.Definition{
 						"TaskID": {
-							Type:       "object",
-							Properties: map[string]smd.Property{},
+							Type: "object",
+							Properties: map[string]smd.Property{
+								"ID": {
+									Description: ``,
+									Type:        smd.String,
+								},
+							},
 						},
 						"ScriptResult": {
 							Type: "object",

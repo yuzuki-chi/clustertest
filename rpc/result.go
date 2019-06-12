@@ -8,7 +8,7 @@ import (
 )
 
 type TaskID struct {
-	id string
+	ID string
 }
 type Result struct {
 	ID     TaskID
@@ -26,7 +26,7 @@ type ScriptResult struct {
 }
 
 func (t *TaskID) String() string {
-	return t.id
+	return t.ID
 }
 
 func NewResult(id models.TaskID, tr models.TaskResult) *Result {
