@@ -340,14 +340,23 @@ func (p *PveProvisioner) updateSchedulerStatus(c *PveClient) error {
 					Used     int
 					Reserved int
 				}{Max: 0, Used: totalCPUs, Reserved: 0},
-				PMem: n.MaxMem,
+				PMem: byte2megabyte(n.MaxMem),
 				VMem: struct {
 					System   int
 					Used     int
 					Reserved int
-				}{System: DEFAULT_SYSTEM_MEM, Used: totalMem, Reserved: 0},
+				}{
+					System:   DEFAULT_SYSTEM_MEM,
+					Used:     byte2megabyte(totalMem),
+					Reserved: 0,
+				},
 			})
 		}
 		return nodes, nil
 	}, false)
+}
+
+// byte2megabyte converts byte to MiB.
+func byte2megabyte(b int) int {
+	return b / 1024 / 1024
 }
