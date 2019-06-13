@@ -34,12 +34,16 @@ func init() {
 	}
 }
 
-// See https://pve.proxmox.com/pve-docs/api-viewer/
-type PveClient struct {
+type PveClientOption struct {
 	Address     string
 	User        string
 	Password    string
 	Fingerprint string
+}
+
+// See https://pve.proxmox.com/pve-docs/api-viewer/
+type PveClient struct {
+	PveClientOption
 	token       *apiToken
 	_httpClient *http.Client
 }

@@ -8,13 +8,17 @@ import (
 func TestPveClient_buildUrl(t *testing.T) {
 	t.Run("normal_case", func(t *testing.T) {
 		c := &PveClient{
-			Address: "base",
+			PveClientOption: PveClientOption{
+				Address: "base",
+			},
 		}
 		assert.Equal(t, "base/path", c.buildUrl("path"))
 	})
 	t.Run("slash", func(t *testing.T) {
 		c := &PveClient{
-			Address: "base/",
+			PveClientOption: PveClientOption{
+				Address: "base/",
+			},
 		}
 		assert.Equal(t, "base/path", c.buildUrl("/path"))
 	})

@@ -307,10 +307,12 @@ func (p *PveProvisioner) ScriptExecutor(scriptType models.ScriptType) models.Scr
 func (p *PveProvisioner) client() *PveClient {
 	px := p.spec.Proxmox
 	return &PveClient{
-		Address:     px.Address,
-		User:        px.Account.User,
-		Password:    px.Account.Password,
-		Fingerprint: px.Fingerprint,
+		PveClientOption: PveClientOption{
+			Address:     px.Address,
+			User:        px.Account.User,
+			Password:    px.Account.Password,
+			Fingerprint: px.Fingerprint,
+		},
 	}
 }
 func (p *PveProvisioner) segments() ([]addresspool.Segment, error) {
