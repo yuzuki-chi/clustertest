@@ -66,7 +66,7 @@ func (w *Worker) runTask(id models.TaskID, task models.Task) (models.TaskResult,
 	ec := make(chan error, len(pros))
 	co.ParForAll(pros, func(i int) {
 		err := pros[i].Create()
-		if err == nil {
+		if err != nil {
 			ec <- err
 		}
 	})
