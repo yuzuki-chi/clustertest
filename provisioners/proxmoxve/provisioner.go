@@ -64,95 +64,15 @@ func (p *PveProvisioner) Create() error {
 		return addresspool.GlobalPool.Transaction(func(pool *addresspool.AddressPoolTx) error {
 			eg := errgroup.Group{}
 			for vmGroupName, vm := range p.spec.VMs {
-				vmGroupName := vmGroupName
-				vm := vm
 				from, err := c.IDFromName(vm.Template)
 				if err != nil {
 					return errors.Wrapf(err, "not found template: %s", vm.Template)
 				}
 				for i := 0; i < vm.Nodes; i++ {
-					i := i
-					// Allocate resources.
-					s, ip, ok := pool.AllocateIP(segs)
-					if !ok {
-						return errors.Errorf("failed to allocate IP address")
-					}
-					vmSpec := VMSpec{
-						Processors: vm.Processors,
-						Memory:     vm.MemorySize,
-					}
-					nodeID, err := scheduler.Schedule(vmSpec)
+					err := p.allocateVM(c, conf, &eg, segs, scheduler, pool, vmGroupName, vm, from, i)
 					if err != nil {
 						return err
 					}
-
-					// Generate Random ID
-					toVMID, err := c.RandomVMID()
-					if err != nil {
-						return errors.Wrap(err, "failed to generate a random id")
-					}
-					to := NodeVMID{
-						NodeID: nodeID,
-						VMID:   toVMID,
-					}
-
-					conf.AddVM(vmGroupName, VMConfig{
-						ID:   to,
-						IP:   ip,
-						Spec: vmSpec,
-					})
-
-					// Clone specified VM and set up it.
-					vmName := fmt.Sprintf("%s-%s-%s-%d", p.prefix, p.spec.Name, vmGroupName, i)
-					description := fmt.Sprintf(
-						"This VM created by clustertest-proxmox-ve-provisioner.\n"+
-							"\n"+
-							"TaskName: %s\n"+
-							"SpecName: %s\n"+
-							"GroupName: %s\n"+
-							"Index: %d\n"+
-							"\n"+
-							"Created at %s\n"+
-							"IP: %s\n",
-						p.prefix,
-						p.spec.Name,
-						vmGroupName,
-						i,
-						time.Now().String(),
-						ip.String(),
-					)
-					task, err := c.CloneVM(from, to, vmName, description, vm.Pool)
-					if err != nil {
-						return errors.Wrap(err, "failed to clone")
-					}
-
-					eg.Go(func() error {
-						// Wait for clone operation to complete.
-						ctx, _ := context.WithTimeout(context.Background(), CloneTimeout)
-						err = task.Wait(ctx)
-						if err != nil {
-							return errors.Wrap(err, "clone operation is timeout")
-						}
-
-						if vm.StorageSize > 0 {
-							err = c.ResizeVolume(to, "scsi0", vm.StorageSize)
-							if err != nil {
-								return errors.Wrap(err, "failed to resize")
-							}
-						}
-						err = c.UpdateConfig(to, &Config{
-							CPUCores:   vm.Processors,
-							CPUSockets: 1,
-							Memory:     vm.MemorySize,
-							User:       p.spec.User.User,
-							SSHKeys:    p.spec.User.SSHPublicKey,
-							IPAddress:  addresspool.ToPveIPConf(s, ip),
-						})
-						if err != nil {
-							return errors.Wrap(err, "failed to update config")
-						}
-						return nil
-					})
 				}
 				return nil
 			}
@@ -382,6 +302,101 @@ func (p *PveProvisioner) updateSchedulerStatus(c *PveClient) error {
 		}
 		return nodes, nil
 	}, false)
+}
+func (p *PveProvisioner) allocateVM(
+	c *PveClient,
+	conf *PveInfraConfig,
+	eg *errgroup.Group,
+	segs []addresspool.Segment,
+	scheduler *ScheduleTx,
+	pool *addresspool.AddressPoolTx,
+	vmGroupName string,
+	vm *PveVM,
+	from NodeVMID,
+	i int,
+) error {
+	// Allocate resources.
+	s, ip, ok := pool.AllocateIP(segs)
+	if !ok {
+		return errors.Errorf("failed to allocate IP address")
+	}
+	vmSpec := VMSpec{
+		Processors: vm.Processors,
+		Memory:     vm.MemorySize,
+	}
+	nodeID, err := scheduler.Schedule(vmSpec)
+	if err != nil {
+		return err
+	}
+
+	// Generate Random ID
+	toVMID, err := c.RandomVMID()
+	if err != nil {
+		return errors.Wrap(err, "failed to generate a random id")
+	}
+	to := NodeVMID{
+		NodeID: nodeID,
+		VMID:   toVMID,
+	}
+
+	conf.AddVM(vmGroupName, VMConfig{
+		ID:   to,
+		IP:   ip,
+		Spec: vmSpec,
+	})
+
+	// Clone specified VM and set up it.
+	vmName := fmt.Sprintf("%s-%s-%s-%d", p.prefix, p.spec.Name, vmGroupName, i)
+	description := fmt.Sprintf(
+		"This VM created by clustertest-proxmox-ve-provisioner.\n"+
+			"\n"+
+			"TaskName: %s\n"+
+			"SpecName: %s\n"+
+			"GroupName: %s\n"+
+			"Index: %d\n"+
+			"\n"+
+			"Created at %s\n"+
+			"IP: %s\n",
+		p.prefix,
+		p.spec.Name,
+		vmGroupName,
+		i,
+		time.Now().String(),
+		ip.String(),
+	)
+	task, err := c.CloneVM(from, to, vmName, description, vm.Pool)
+	if err != nil {
+		return errors.Wrap(err, "failed to clone")
+	}
+
+	eg.Go(func() error {
+		// Wait for clone operation to complete.
+		ctx, _ := context.WithTimeout(context.Background(), CloneTimeout)
+		err = task.Wait(ctx)
+		if err != nil {
+			return errors.Wrap(err, "clone operation is timeout")
+		}
+
+		if vm.StorageSize > 0 {
+			err = c.ResizeVolume(to, "scsi0", vm.StorageSize)
+			if err != nil {
+				return errors.Wrap(err, "failed to resize")
+			}
+		}
+		err = c.UpdateConfig(to, &Config{
+			CPUCores:   vm.Processors,
+			CPUSockets: 1,
+			Memory:     vm.MemorySize,
+			User:       p.spec.User.User,
+			SSHKeys:    p.spec.User.SSHPublicKey,
+			IPAddress:  addresspool.ToPveIPConf(s, ip),
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to update config")
+		}
+		return nil
+	})
+	return nil
 }
 
 // byte2megabyte converts byte to MiB.

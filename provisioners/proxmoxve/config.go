@@ -39,23 +39,24 @@ type PveSpec struct {
 		Password     string
 		SSHPublicKey string `yaml:"ssh_public_key"`
 	}
-	VMs map[string]*struct {
-		// Template name.
-		Template string
-		// Pool name to which the VM belongs.
-		Pool string
-		// Number of VMs.
-		Nodes int
-		// Number of processors.
-		Processors int
-		// RAM size (MiB).
-		MemorySize int `yaml:"memory_size"`
-		// Minimal storage size (GiB).
-		// The storage may be large than specified size.
-		StorageSize int `yaml:"storage_size"`
-		// Define tasks to execute on VMs.
-		Scripts *config.ScriptConfigSet
-	}
+	VMs map[string]*PveVM
+}
+type PveVM struct {
+	// Template name.
+	Template string
+	// Pool name to which the VM belongs.
+	Pool string
+	// Number of VMs.
+	Nodes int
+	// Number of processors.
+	Processors int
+	// RAM size (MiB).
+	MemorySize int `yaml:"memory_size"`
+	// Minimal storage size (GiB).
+	// The storage may be large than specified size.
+	StorageSize int `yaml:"storage_size"`
+	// Define tasks to execute on VMs.
+	Scripts *config.ScriptConfigSet
 }
 
 func (s *PveSpec) String() string {
