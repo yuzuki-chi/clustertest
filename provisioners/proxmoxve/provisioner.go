@@ -18,7 +18,7 @@ import (
 
 const CloneTimeout = 30 * time.Second
 const StartTimeout = 10 * time.Second
-const DeleteTImeout = 10 * time.Second
+const DeleteTimeout = 10 * time.Second
 
 const specType = models.SpecType("proxmox-ve")
 const vmConfigsAttrName = "provisioners/proxmox-ve/vm-configs"
@@ -207,7 +207,7 @@ func (p *PveProvisioner) Delete() error {
 			if err != nil {
 				return errors.Wrap(err, "failed to delete VM")
 			}
-			ctx, _ := context.WithTimeout(context.Background(), DeleteTImeout)
+			ctx, _ := context.WithTimeout(context.Background(), DeleteTimeout)
 			err = task.Wait(ctx)
 			if err != nil {
 				return err
