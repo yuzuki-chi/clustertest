@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/republicprotocol/co-go"
 	"github.com/yuuki0xff/clustertest/config"
 	"github.com/yuuki0xff/clustertest/executors"
 	"github.com/yuuki0xff/clustertest/models"
@@ -62,22 +63,29 @@ func (w *Worker) runTask(id models.TaskID, task models.Task) (models.TaskResult,
 	}
 
 	// Create resources.
-	for _, pro := range pros {
-		err = pro.Create()
-		if err != nil {
-			result.ErrorMsg = err.Error()
-			return result, nil
+	ec := make(chan error, len(pros))
+	co.ParForAll(pros, func(i int) {
+		err := pros[i].Create()
+		if err == nil {
+			ec <- err
 		}
+	})
+	close(ec)
+	if err = <-ec; err != nil {
+		result.ErrorMsg = err.Error()
+		return result, nil
 	}
 
-	// Run scripts.
+	// Run the "before" script.
 	before := executors.MergedResult{}
-	main := executors.MergedResult{}
-	after := executors.MergedResult{}
-
-	for _, pro := range pros {
+	rc := make(chan models.ScriptResult, len(pros))
+	co.ParForAll(pros, func(i int) {
+		pro := pros[i]
 		sets := pro.ScriptSets()
-		r := executors.ExecuteBefore(pro, sets)
+		rc <- executors.ExecuteBefore(pro, sets)
+	})
+	close(rc)
+	for r := range rc {
 		before.Append(r)
 		if r.ExitCode() != 0 {
 			result.ErrorMsg = fmt.Sprintf("failed the \"before\" task: exitcode=%d", r.ExitCode())
@@ -87,9 +95,16 @@ func (w *Worker) runTask(id models.TaskID, task models.Task) (models.TaskResult,
 	}
 	result.Before = NewScriptResult(&before)
 
-	for _, pro := range pros {
+	// Run the "main" script.
+	main := executors.MergedResult{}
+	rc = make(chan models.ScriptResult, len(pros))
+	co.ParForAll(pros, func(i int) {
+		pro := pros[i]
 		sets := pro.ScriptSets()
-		r := executors.ExecuteMain(pro, sets)
+		rc <- executors.ExecuteMain(pro, sets)
+	})
+	close(rc)
+	for r := range rc {
 		main.Append(r)
 		if r.ExitCode() != 0 {
 			result.ErrorMsg = fmt.Sprintf("failed the \"main\" task: exitcode=%d", r.ExitCode())
@@ -99,9 +114,16 @@ func (w *Worker) runTask(id models.TaskID, task models.Task) (models.TaskResult,
 	}
 	result.Main = NewScriptResult(&main)
 
-	for _, pro := range pros {
+	// Run the "after" script.
+	after := executors.MergedResult{}
+	rc = make(chan models.ScriptResult, len(pros))
+	co.ParForAll(pros, func(i int) {
+		pro := pros[i]
 		sets := pro.ScriptSets()
-		r := executors.ExecuteAfter(pro, sets)
+		rc <- executors.ExecuteAfter(pro, sets)
+	})
+	close(rc)
+	for r := range rc {
 		after.Append(r)
 		if r.ExitCode() != 0 {
 			result.ErrorMsg = fmt.Sprintf("failed the \"after\" task: exitcode=%d", r.ExitCode())
@@ -112,12 +134,18 @@ func (w *Worker) runTask(id models.TaskID, task models.Task) (models.TaskResult,
 	result.After = NewScriptResult(&after)
 
 	// Delete resources.
-	for _, pro := range pros {
-		err = pro.Delete()
+	ec = make(chan error, len(pros))
+	co.ParForAll(pros, func(i int) {
+		pro := pros[i]
+		err := pro.Delete()
 		if err != nil {
-			result.ErrorMsg = err.Error()
-			return result, nil
+			ec <- err
 		}
+	})
+	close(ec)
+	if err = <-ec; err != nil {
+		result.ErrorMsg = err.Error()
+		return result, nil
 	}
 
 	return result, nil
