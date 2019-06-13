@@ -53,7 +53,7 @@ type VMSpec struct {
 
 type Scheduler struct {
 	nodes map[NodeID]*Node
-	m     sync.RWMutex
+	m     sync.Mutex
 }
 type ScheduleTx struct {
 	S        *Scheduler
