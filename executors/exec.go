@@ -1,6 +1,10 @@
 package executors
 
-import "github.com/yuuki0xff/clustertest/models"
+import (
+	"github.com/republicprotocol/co-go"
+	"github.com/yuuki0xff/clustertest/models"
+	"sync"
+)
 
 func ExecuteBefore(p models.Provisioner, sets []*models.ScriptSet) models.ScriptResult {
 	var scripts []models.Script
@@ -27,14 +31,20 @@ func ExecuteAfter(p models.Provisioner, sets []*models.ScriptSet) models.ScriptR
 }
 
 func executeAll(p models.Provisioner, scripts []models.Script) models.ScriptResult {
+	m := sync.Mutex{}
 	mr := &MergedResult{}
-	for _, s := range scripts {
+
+	co.ParForAll(scripts, func(i int) {
+		s := scripts[i]
 		if s == nil {
-			continue
+			return
 		}
 		e := p.ScriptExecutor(s.Type())
 		result := e.Execute(s)
+
+		m.Lock()
 		mr.Append(result)
-	}
+		m.Unlock()
+	})
 	return mr
 }
