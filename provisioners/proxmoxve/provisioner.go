@@ -72,61 +72,61 @@ func (p *PveProvisioner) Create() error {
 				}
 				for i := 0; i < vm.Nodes; i++ {
 					i := i
+					// Allocate resources.
+					s, ip, ok := pool.AllocateIP(segs)
+					if !ok {
+						return errors.Errorf("failed to allocate IP address")
+					}
+					vmSpec := VMSpec{
+						Processors: vm.Processors,
+						Memory:     vm.MemorySize,
+					}
+					nodeID, err := scheduler.Schedule(vmSpec)
+					if err != nil {
+						return err
+					}
+
+					// Generate Random ID
+					toVMID, err := c.RandomVMID()
+					if err != nil {
+						return errors.Wrap(err, "failed to generate a random id")
+					}
+					to := NodeVMID{
+						NodeID: nodeID,
+						VMID:   toVMID,
+					}
+
+					conf.AddVM(vmGroupName, VMConfig{
+						ID:   to,
+						IP:   ip,
+						Spec: vmSpec,
+					})
+
+					// Clone specified VM and set up it.
+					vmName := fmt.Sprintf("%s-%s-%s-%d", p.prefix, p.spec.Name, vmGroupName, i)
+					description := fmt.Sprintf(
+						"This VM created by clustertest-proxmox-ve-provisioner.\n"+
+							"\n"+
+							"TaskName: %s\n"+
+							"SpecName: %s\n"+
+							"GroupName: %s\n"+
+							"Index: %d\n"+
+							"\n"+
+							"Created at %s\n"+
+							"IP: %s\n",
+						p.prefix,
+						p.spec.Name,
+						vmGroupName,
+						i,
+						time.Now().String(),
+						ip.String(),
+					)
+					task, err := c.CloneVM(from, to, vmName, description, vm.Pool)
+					if err != nil {
+						return errors.Wrap(err, "failed to clone")
+					}
+
 					eg.Go(func() error {
-						// Allocate resources.
-						s, ip, ok := pool.AllocateIP(segs)
-						if !ok {
-							return errors.Errorf("failed to allocate IP address")
-						}
-						vmSpec := VMSpec{
-							Processors: vm.Processors,
-							Memory:     vm.MemorySize,
-						}
-						nodeID, err := scheduler.Schedule(vmSpec)
-						if err != nil {
-							return err
-						}
-
-						// Generate Random ID
-						toVMID, err := c.RandomVMID()
-						if err != nil {
-							return errors.Wrap(err, "failed to generate a random id")
-						}
-						to := NodeVMID{
-							NodeID: nodeID,
-							VMID:   toVMID,
-						}
-
-						conf.AddVM(vmGroupName, VMConfig{
-							ID:   to,
-							IP:   ip,
-							Spec: vmSpec,
-						})
-
-						// Clone specified VM and set up it.
-						vmName := fmt.Sprintf("%s-%s-%s-%d", p.prefix, p.spec.Name, vmGroupName, i)
-						description := fmt.Sprintf(
-							"This VM created by clustertest-proxmox-ve-provisioner.\n"+
-								"\n"+
-								"TaskName: %s\n"+
-								"SpecName: %s\n"+
-								"GroupName: %s\n"+
-								"Index: %d\n"+
-								"\n"+
-								"Created at %s\n"+
-								"IP: %s\n",
-							p.prefix,
-							p.spec.Name,
-							vmGroupName,
-							i,
-							time.Now().String(),
-							ip.String(),
-						)
-						task, err := c.CloneVM(from, to, vmName, description, vm.Pool)
-						if err != nil {
-							return errors.Wrap(err, "failed to clone")
-						}
-
 						// Wait for clone operation to complete.
 						ctx, _ := context.WithTimeout(context.Background(), CloneTimeout)
 						err = task.Wait(ctx)
