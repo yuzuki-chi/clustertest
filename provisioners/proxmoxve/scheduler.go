@@ -114,6 +114,9 @@ func (s *Scheduler) UpdateNodes(fn func() ([]*Node, error), updateReserved bool)
 // Schedule decides best VM location and reserves it.
 // You should call the Use() or Cancel() after call it.
 func (s *Scheduler) Schedule(spec VMSpec) (NodeID, error) {
+	s.m.Lock()
+	defer s.m.Unlock()
+
 	for id, n := range s.nodes {
 		if n.VCPU.Max > 0 {
 			if n.VCPU.Max-(n.VCPU.Used+n.VCPU.Reserved) < spec.Processors {
