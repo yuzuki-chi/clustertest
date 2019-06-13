@@ -74,7 +74,6 @@ func (p *PveProvisioner) Create() error {
 						return err
 					}
 				}
-				return nil
 			}
 			return eg.Wait()
 		})
