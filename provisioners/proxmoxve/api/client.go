@@ -101,6 +101,12 @@ type Config struct {
 	IPAddress string `url:"ipconfig0" json:"ipconfig0"`
 }
 
+func NewPveClient(option PveClientOption) *PveClient {
+	return &PveClient{
+		PveClientOption: option,
+	}
+}
+
 // Ticket creates an authentication ticket.
 func (c *PveClient) Ticket() error {
 	return cmdutils.HandlePanic(func() error {
