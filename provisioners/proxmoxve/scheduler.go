@@ -2,8 +2,11 @@ package proxmoxve
 
 import (
 	"context"
+	"fmt"
 	"github.com/pkg/errors"
 	. "github.com/yuuki0xff/clustertest/provisioners/proxmoxve/api"
+	"log"
+	"strings"
 	"sync"
 	"time"
 )
@@ -69,6 +72,29 @@ type ScheduleTx struct {
 	}
 	committed bool
 	reverted  bool
+}
+
+func (n *Node) String() string {
+	return strings.Trim(strings.Join([]string{
+		fmt.Sprintln("Node", n.NodeID),
+		fmt.Sprintln("  VCPU", "used", n.VCPU.Used, "reserved", n.VCPU.Reserved),
+		fmt.Sprintln("  VMem", "used", n.VMem.Used, "reserved", n.VMem.Reserved),
+	}, ""), "\n")
+}
+
+func init() {
+	// Dump  scheduler status to debug.
+	go func() {
+		t := time.NewTicker(10 * time.Second)
+		for range t.C {
+			if GlobalScheduler == nil {
+				continue
+			}
+			for _, n := range GlobalScheduler.nodes {
+				log.Println(n)
+			}
+		}
+	}()
 }
 
 // UpdateNodes updates all nodes status.
