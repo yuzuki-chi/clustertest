@@ -40,8 +40,8 @@ type PveProvisioner struct {
 	config *PveInfraConfig
 }
 
-// Create creates all resources of defined by PveSpec.
-func (p *PveProvisioner) Create() error {
+// Reserve() reserves all resources (CPU, memory, storage, etc) of defined by PveSpec.
+func (p *PveProvisioner) Reserve() error {
 	c := p.client()
 	err := c.Ticket()
 	if err != nil {
@@ -84,9 +84,20 @@ func (p *PveProvisioner) Create() error {
 	}
 	// Update the InfraConfig.
 	p.config = conf
+	return nil
+}
+
+// Create starts all VMs of defined by PveSpec.
+func (p *PveProvisioner) Create() error {
+	c := p.client()
+	err := c.Ticket()
+	if err != nil {
+		return errors.Wrap(err, "failed to get Proxmox VE API ticket")
+	}
 
 	// Start all VMs.
 	eg := errgroup.Group{}
+	conf := p.config
 	for _, vms := range conf.VMs {
 		for _, vm := range vms {
 			vm := vm
