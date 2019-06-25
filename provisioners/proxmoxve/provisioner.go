@@ -13,6 +13,7 @@ import (
 	"github.com/yuuki0xff/clustertest/provisioners/proxmoxve/addresspool"
 	. "github.com/yuuki0xff/clustertest/provisioners/proxmoxve/api"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 	"net"
 	"sync"
 	"time"
@@ -30,6 +31,11 @@ const vmConfigsAttrName = "provisioners/proxmox-ve/vm-configs"
 // 確保済み扱いのCPUやメモリがカウントされない。このため、リソース開放時にpanicする。
 // これを回避するために Scheduler.UpdateNodes() の実行は1階限りに制限する。
 var PveUpdateSchedulerOnce sync.Once
+
+// TODO
+// 複数のprovisionerが同時にcloneをすると、IDが衝突してしまう。
+// これを回避するため、同時にclone操作をするのを制限した。
+var PveCloneSem = semaphore.NewWeighted(1)
 
 func init() {
 	provisioners.Provisioners[specType] = func(prefix string, spec models.Spec) models.Provisioner {
@@ -349,14 +355,51 @@ func (p *PveProvisioner) allocateVM(
 		return err
 	}
 
-	// Generate Random ID
-	toVMID, err := c.RandomVMID()
+	var to NodeVMID
+	var task Task
+	func() {
+		PveCloneSem.Acquire(context.Background(), 1)
+		defer PveCloneSem.Release(1)
+
+		// Generate Random ID
+		var toVMID VMID
+		toVMID, err = c.RandomVMID()
+		if err != nil {
+			err = errors.Wrap(err, "failed to generate a random id")
+			return
+		}
+		to = NodeVMID{
+			NodeID: nodeID,
+			VMID:   toVMID,
+		}
+
+		// Clone specified VM and set up it.
+		vmName := fmt.Sprintf("%s-%s-%s-%d", p.prefix, p.spec.Name, vmGroupName, i)
+		description := fmt.Sprintf(
+			"This VM created by clustertest-proxmox-ve-provisioner.\n"+
+				"\n"+
+				"TaskName: %s\n"+
+				"SpecName: %s\n"+
+				"GroupName: %s\n"+
+				"Index: %d\n"+
+				"\n"+
+				"Created at %s\n"+
+				"IP: %s\n",
+			p.prefix,
+			p.spec.Name,
+			vmGroupName,
+			i,
+			time.Now().String(),
+			ip.String(),
+		)
+		task, err = c.CloneVM(from, to, vmName, description, vm.Pool)
+		if err != nil {
+			err = errors.Wrap(err, "failed to clone")
+			return
+		}
+	}()
 	if err != nil {
-		return errors.Wrap(err, "failed to generate a random id")
-	}
-	to := NodeVMID{
-		NodeID: nodeID,
-		VMID:   toVMID,
+		return err
 	}
 
 	conf.AddVM(vmGroupName, VMConfig{
@@ -364,30 +407,6 @@ func (p *PveProvisioner) allocateVM(
 		IP:   ip,
 		Spec: vmSpec,
 	})
-
-	// Clone specified VM and set up it.
-	vmName := fmt.Sprintf("%s-%s-%s-%d", p.prefix, p.spec.Name, vmGroupName, i)
-	description := fmt.Sprintf(
-		"This VM created by clustertest-proxmox-ve-provisioner.\n"+
-			"\n"+
-			"TaskName: %s\n"+
-			"SpecName: %s\n"+
-			"GroupName: %s\n"+
-			"Index: %d\n"+
-			"\n"+
-			"Created at %s\n"+
-			"IP: %s\n",
-		p.prefix,
-		p.spec.Name,
-		vmGroupName,
-		i,
-		time.Now().String(),
-		ip.String(),
-	)
-	task, err := c.CloneVM(from, to, vmName, description, vm.Pool)
-	if err != nil {
-		return errors.Wrap(err, "failed to clone")
-	}
 
 	eg.Go(func() error {
 		// Wait for clone operation to complete.
