@@ -39,7 +39,7 @@ func (db *MemTaskDB) Create(task models.Task) (models.TaskID, error) {
 	db.m.Lock()
 	defer db.m.Unlock()
 
-	id := &SequenceTaskID{
+	id := &IntTaskID{
 		ID: db.nextID,
 	}
 	db.nextID++

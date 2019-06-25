@@ -2,11 +2,11 @@ package databases
 
 import "fmt"
 
-type SequenceTaskID struct {
+type IntTaskID struct {
 	ID int
 }
 
-func (s *SequenceTaskID) String() string {
+func (s *IntTaskID) String() string {
 	return fmt.Sprint(s.ID)
 }
 
