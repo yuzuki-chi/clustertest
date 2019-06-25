@@ -14,6 +14,7 @@ import (
 	. "github.com/yuuki0xff/clustertest/provisioners/proxmoxve/api"
 	"golang.org/x/sync/errgroup"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -23,6 +24,12 @@ const DeleteTimeout = 10 * time.Second
 
 const specType = models.SpecType("proxmox-ve")
 const vmConfigsAttrName = "provisioners/proxmox-ve/vm-configs"
+
+// TODO
+// タスクが動いている最中、特にReserve()とCreate()の間にschedulerStatusが実行されてしまうと、
+// 確保済み扱いのCPUやメモリがカウントされない。このため、リソース開放時にpanicする。
+// これを回避するために Scheduler.UpdateNodes() の実行は1階限りに制限する。
+var PveUpdateSchedulerOnce sync.Once
 
 func init() {
 	provisioners.Provisioners[specType] = func(prefix string, spec models.Spec) models.Provisioner {
@@ -268,50 +275,53 @@ func (p *PveProvisioner) segments() ([]addresspool.Segment, error) {
 	}
 	return segs, nil
 }
-func (p *PveProvisioner) updateSchedulerStatus(c *PveClient) error {
-	return GlobalScheduler.UpdateNodes(func() ([]*Node, error) {
-		nodeInfos, err := c.ListNodes()
-		if err != nil {
-			return nil, err
-		}
-
-		var nodes []*Node
-		for _, n := range nodeInfos {
-			var totalCPUs int
-			var totalMem int
-			vms, err := c.ListVMs(n.ID)
+func (p *PveProvisioner) updateSchedulerStatus(c *PveClient) (err error) {
+	PveUpdateSchedulerOnce.Do(func() {
+		err = GlobalScheduler.UpdateNodes(func() ([]*Node, error) {
+			nodeInfos, err := c.ListNodes()
 			if err != nil {
 				return nil, err
 			}
-			for _, vm := range vms {
-				if vm.Status == "running" {
-					totalCPUs += vm.Cpus
-					totalMem += vm.Mem
-				}
-			}
 
-			nodes = append(nodes, &Node{
-				NodeID: n.ID,
-				PCPU:   n.MaxCPU,
-				VCPU: struct {
-					Max      int
-					Used     int
-					Reserved int
-				}{Max: 0, Used: totalCPUs, Reserved: 0},
-				PMem: byte2megabyte(n.MaxMem),
-				VMem: struct {
-					System   int
-					Used     int
-					Reserved int
-				}{
-					System:   DEFAULT_SYSTEM_MEM,
-					Used:     byte2megabyte(totalMem),
-					Reserved: 0,
-				},
-			})
-		}
-		return nodes, nil
-	}, false)
+			var nodes []*Node
+			for _, n := range nodeInfos {
+				var totalCPUs int
+				var totalMem int
+				vms, err := c.ListVMs(n.ID)
+				if err != nil {
+					return nil, err
+				}
+				for _, vm := range vms {
+					if vm.Status == "running" {
+						totalCPUs += vm.Cpus
+						totalMem += vm.Mem
+					}
+				}
+
+				nodes = append(nodes, &Node{
+					NodeID: n.ID,
+					PCPU:   n.MaxCPU,
+					VCPU: struct {
+						Max      int
+						Used     int
+						Reserved int
+					}{Max: 0, Used: totalCPUs, Reserved: 0},
+					PMem: byte2megabyte(n.MaxMem),
+					VMem: struct {
+						System   int
+						Used     int
+						Reserved int
+					}{
+						System:   DEFAULT_SYSTEM_MEM,
+						Used:     byte2megabyte(totalMem),
+						Reserved: 0,
+					},
+				})
+			}
+			return nodes, nil
+		}, false)
+	})
+	return
 }
 func (p *PveProvisioner) allocateVM(
 	c *PveClient,
