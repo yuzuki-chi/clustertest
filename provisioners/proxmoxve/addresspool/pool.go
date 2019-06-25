@@ -100,7 +100,6 @@ func (tx *AddressPoolTx) Allocate(segments []Segment) string {
 	if !ok {
 		return ""
 	}
-	tx.allocated = append(tx.allocated, ip)
 	return ToPveIPConf(s, ip)
 }
 
