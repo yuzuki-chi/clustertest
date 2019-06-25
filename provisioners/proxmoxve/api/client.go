@@ -461,10 +461,11 @@ func (c *PveClient) req(method, path string, query interface{}, post interface{}
 			}
 			reqLogger.Println(r.StatusCode)
 			if !r.Ok {
+				status := r.StatusCode
 				body := r.String()
 				reqLogger.Println(body)
 				r = nil
-				err = NewStatusError(r.StatusCode, body)
+				err = NewStatusError(status, body)
 				return
 			}
 			return
