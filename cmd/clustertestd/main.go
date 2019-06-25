@@ -40,6 +40,7 @@ var killCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(statusCmd, stopCmd, killCmd)
+	rootCmd.Flags().Int32P("jobs", "j", 8, "number of jobs to run simultaneously")
 }
 
 func main() {
