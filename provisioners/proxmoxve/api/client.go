@@ -30,6 +30,10 @@ const MaxConn = 4
 
 var reqLogger = log.New(ioutil.Discard, "", 0)
 
+// TODO: 接続先のサーバ毎にコネクション数を制限
+// sem limits max connection to API server.
+var sem = semaphore.NewWeighted(MaxConn)
+
 func init() {
 	if os.Getenv("CLUSTERTEST_DEBUG") != "" {
 		reqLogger = log.New(os.Stderr, "proxmox-ve: ", log.LstdFlags|log.Lshortfile)
@@ -46,8 +50,6 @@ type PveClientOption struct {
 // See https://pve.proxmox.com/pve-docs/api-viewer/
 type PveClient struct {
 	PveClientOption
-	// sem limits max connection to API server.
-	sem         *semaphore.Weighted
 	token       *apiToken
 	_httpClient *http.Client
 }
@@ -108,7 +110,6 @@ type Config struct {
 func NewPveClient(option PveClientOption) *PveClient {
 	return &PveClient{
 		PveClientOption: option,
-		sem:             semaphore.NewWeighted(MaxConn),
 	}
 }
 
@@ -441,8 +442,8 @@ func (c *PveClient) StopVM(id NodeVMID) (Task, error) {
 	return task, err
 }
 func (c *PveClient) req(method, path string, query interface{}, post interface{}) (*grequests.Response, error) {
-	c.sem.Acquire(context.Background(), 1)
-	defer c.sem.Release(1)
+	sem.Acquire(context.Background(), 1)
+	defer sem.Release(1)
 
 	url, option := c.ro(path, query, post)
 	reqLogger.Println(method, url, query, post)
