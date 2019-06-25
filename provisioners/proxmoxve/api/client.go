@@ -456,7 +456,7 @@ func (c *PveClient) req(method, path string, query interface{}, post interface{}
 	if !r.Ok {
 		body := r.String()
 		reqLogger.Println(body)
-		return nil, errors.Errorf("received unexpected status code: %d, response=%s", r.StatusCode, body)
+		return nil, NewStatusError(r.StatusCode, body)
 	}
 	return r, nil
 }
