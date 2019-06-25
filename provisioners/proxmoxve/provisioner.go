@@ -19,6 +19,7 @@ import (
 	"time"
 )
 
+const ScheduleTimeout = 5 * time.Minute
 const CloneTimeout = 5 * time.Minute
 const StartTimeout = 10 * time.Second
 const DeleteTimeout = 10 * time.Second
@@ -350,7 +351,9 @@ func (p *PveProvisioner) allocateVM(
 		Processors: vm.Processors,
 		Memory:     vm.MemorySize,
 	}
-	nodeID, err := scheduler.Schedule(vmSpec)
+
+	ctx, _ := context.WithTimeout(context.Background(), ScheduleTimeout)
+	nodeID, err := scheduler.ScheduleWait(ctx, vmSpec)
 	if err != nil {
 		return err
 	}

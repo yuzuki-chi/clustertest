@@ -1,9 +1,11 @@
 package proxmoxve
 
 import (
+	"context"
 	"github.com/pkg/errors"
 	. "github.com/yuuki0xff/clustertest/provisioners/proxmoxve/api"
 	"sync"
+	"time"
 )
 
 // 4096MiB = 4GiB
@@ -11,6 +13,9 @@ const DEFAULT_SYSTEM_MEM = 4096
 
 // TODO: 複数のクラスタに対応できない
 var GlobalScheduler = &Scheduler{}
+
+// FullError means failed to allocate resources.
+var FullError = errors.Errorf("full")
 
 type Node struct {
 	NodeID NodeID
@@ -134,7 +139,7 @@ func (s *Scheduler) Schedule(spec VMSpec) (NodeID, error) {
 		return id, nil
 	}
 	// Not found a best node.
-	return NodeID(""), errors.Errorf("full")
+	return NodeID(""), FullError
 }
 
 // Use notifies it to scheduler that specified VM started to running.
@@ -239,6 +244,23 @@ func (tx *ScheduleTx) Schedule(spec VMSpec) (NodeID, error) {
 		Spec VMSpec
 	}{ID: id, Spec: spec})
 	return id, nil
+}
+
+// ScheduleWait waits for allocate resources and reserves it.
+func (tx *ScheduleTx) ScheduleWait(ctx context.Context, spec VMSpec) (NodeID, error) {
+	t := time.NewTicker(time.Second)
+	for {
+		select {
+		case <-ctx.Done():
+			return NodeID(""), errors.New("timeout ScheduleWait()")
+		case <-t.C:
+			id, err := tx.Schedule(spec)
+			if err == FullError {
+				continue
+			}
+			return id, err
+		}
+	}
 }
 
 // Commit allocates all reserved resources while this transaction.
