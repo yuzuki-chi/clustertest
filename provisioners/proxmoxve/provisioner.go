@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-const CloneTimeout = 30 * time.Second
+const CloneTimeout = 5 * time.Minute
 const StartTimeout = 10 * time.Second
 const DeleteTimeout = 10 * time.Second
 
