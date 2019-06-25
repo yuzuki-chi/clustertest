@@ -27,6 +27,8 @@ const timeout = 10 * time.Second
 const StoppedVMStatus = VMStatus("stopped")
 const RunningVMStatus = VMStatus("running")
 const MaxConn = 4
+const MaxRetry = 30
+const RetryInterval = 3 * time.Second
 
 var reqLogger = log.New(ioutil.Discard, "", 0)
 
@@ -441,24 +443,43 @@ func (c *PveClient) StopVM(id NodeVMID) (Task, error) {
 	})
 	return task, err
 }
-func (c *PveClient) req(method, path string, query interface{}, post interface{}) (*grequests.Response, error) {
-	sem.Acquire(context.Background(), 1)
-	defer sem.Release(1)
+func (c *PveClient) req(method, path string, query interface{}, post interface{}) (r *grequests.Response, err error) {
+	t := time.NewTicker(RetryInterval)
+	for i := 0; i < MaxRetry; i++ {
+		func() {
+			sem.Acquire(context.Background(), 1)
+			defer sem.Release(1)
 
-	url, option := c.ro(path, query, post)
-	reqLogger.Println(method, url, query, post)
-	r, err := grequests.DoRegularRequest(method, url, option)
-	if err != nil {
-		reqLogger.Println(err)
-		return nil, errors.Wrap(err, "failed to request")
+			url, option := c.ro(path, query, post)
+			reqLogger.Println(method, url, query, post)
+			r, err = grequests.DoRegularRequest(method, url, option)
+			if err != nil {
+				reqLogger.Println(err)
+				r = nil
+				err = errors.Wrap(err, "failed to request")
+				return
+			}
+			reqLogger.Println(r.StatusCode)
+			if !r.Ok {
+				body := r.String()
+				reqLogger.Println(body)
+				r = nil
+				err = NewStatusError(r.StatusCode, body)
+				return
+			}
+			return
+		}()
+
+		if err != nil {
+			if e, ok := err.(*StatusError); ok && 500 <= e.StatusCode && e.StatusCode < 600 {
+				// Wait for few seconds.
+				<-t.C
+				continue
+			}
+		}
+		return
 	}
-	reqLogger.Println(r.StatusCode)
-	if !r.Ok {
-		body := r.String()
-		reqLogger.Println(body)
-		return nil, NewStatusError(r.StatusCode, body)
-	}
-	return r, nil
+	return
 }
 func (c *PveClient) reqJSON(method, path string, query, post, js interface{}) error {
 	r, err := c.req(method, path, query, post)
