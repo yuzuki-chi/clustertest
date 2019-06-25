@@ -27,15 +27,13 @@ func (s *TaskStatus) IsOK() bool {
 
 func (t *Task) Wait(ctx context.Context) error {
 	var status TaskStatus
-	timer := time.NewTimer(0)
+	ticker := time.NewTicker(time.Second)
 
 	// Wait for task to complete.
 WaitLoop:
 	for {
-		timer.Reset(time.Second)
-
 		select {
-		case <-timer.C:
+		case <-ticker.C:
 			var err error
 			status, err = t.Client.taskStatus(t)
 			if err != nil {
