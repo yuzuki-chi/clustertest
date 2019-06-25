@@ -149,10 +149,10 @@ func (s *Scheduler) Use(id NodeID, spec VMSpec) {
 		panic(errors.Errorf("not found node: %s", id))
 	}
 	if node.VCPU.Reserved-spec.Processors < 0 {
-		panic(errors.Errorf("lacking reserved vCPUs"))
+		panic(errors.Errorf("lacking reserved vCPUs: %d %d", node.VCPU.Reserved, spec.Processors))
 	}
 	if node.VMem.Reserved-spec.Memory < 0 {
-		panic(errors.Errorf("lacking reserved vMem"))
+		panic(errors.Errorf("lacking reserved vMem: %d %d", node.VMem.Reserved, spec.Memory))
 	}
 
 	node.VCPU.Reserved -= spec.Processors
@@ -173,10 +173,10 @@ func (s *Scheduler) Cancel(id NodeID, spec VMSpec) {
 		panic(errors.Errorf("not found node: %s", id))
 	}
 	if node.VCPU.Reserved-spec.Processors < 0 {
-		panic(errors.Errorf("lacking reserved vCPUs"))
+		panic(errors.Errorf("lacking reserved vCPUs: %d %d", node.VCPU.Reserved, spec.Processors))
 	}
 	if node.VMem.Reserved-spec.Memory < 0 {
-		panic(errors.Errorf("lacking reserved vMem"))
+		panic(errors.Errorf("lacking reserved vMem: %d %d", node.VMem.Reserved, spec.Memory))
 	}
 
 	node.VCPU.Reserved -= spec.Processors
@@ -192,10 +192,10 @@ func (s *Scheduler) Free(id NodeID, spec VMSpec) {
 		panic(errors.Errorf("not found node: %s", id))
 	}
 	if node.VCPU.Used-spec.Processors < 0 {
-		panic(errors.Errorf("lacking reserved vCPUs"))
+		panic(errors.Errorf("lacking reserved vCPUs: %d %d", node.VCPU.Used, spec.Processors))
 	}
 	if node.VMem.Used-spec.Memory < 0 {
-		panic(errors.Errorf("lacking reserved vMem"))
+		panic(errors.Errorf("lacking reserved vMem: %d %d", node.VMem.Used, spec.Memory))
 	}
 
 	node.VCPU.Used -= spec.Processors
