@@ -43,7 +43,7 @@ WaitLoop:
 				break WaitLoop
 			}
 		case <-ctx.Done():
-			return errors.Errorf("task timeout")
+			return errors.Errorf("task timeout: NodeID=%s TaskID=%s", t.NodeID, t.TaskID)
 		}
 	}
 
