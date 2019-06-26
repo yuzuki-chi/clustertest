@@ -21,8 +21,8 @@ import (
 
 const ScheduleTimeout = 5 * time.Minute
 const CloneTimeout = 5 * time.Minute
-const StartTimeout = 10 * time.Second
-const DeleteTimeout = 10 * time.Second
+const StartTimeout = 5 * time.Minute
+const DeleteTimeout = 5 * time.Minute
 
 const specType = models.SpecType("proxmox-ve")
 const vmConfigsAttrName = "provisioners/proxmox-ve/vm-configs"

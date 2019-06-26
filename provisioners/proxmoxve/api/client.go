@@ -23,7 +23,7 @@ import (
 )
 
 const PveMaxVMID = 999999999
-const timeout = 10 * time.Second
+const timeout = 5 * time.Minute
 const StoppedVMStatus = VMStatus("stopped")
 const RunningVMStatus = VMStatus("running")
 const MaxConn = 4
