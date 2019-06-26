@@ -472,8 +472,9 @@ func (c *PveClient) req(method, path string, query interface{}, post interface{}
 		}()
 
 		if err != nil {
-			if e, ok := err.(*StatusError); ok && 500 <= e.StatusCode && e.StatusCode < 600 {
+			if e, ok := err.(*StatusError); ok && (e.StatusCode == 403 || 500 <= e.StatusCode && e.StatusCode < 600) {
 				// Wait for few seconds.
+				reqLogger.Println("retrying ...")
 				<-t.C
 				continue
 			}
