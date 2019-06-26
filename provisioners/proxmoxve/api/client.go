@@ -159,38 +159,36 @@ func (c *PveClient) RandomVMID() (VMID, error) {
 }
 
 // CloneVM creates a copy of virtual machine/template.
-func (c *PveClient) CloneVM(from, to NodeVMID, name, description, pool string) (Task, error) {
-	var task Task
-	err := cmdutils.HandlePanic(func() error {
-		query := struct {
-			NewVMID     VMID   `url:"newid"`
-			TargetNode  NodeID `url:"target"`
-			Name        string `url:"name"`
-			Description string `url:"description"`
-			Pool        string `url:"pool"`
-		}{
-			NewVMID:     to.VMID,
-			TargetNode:  to.NodeID,
-			Name:        name,
-			Description: description,
-			Pool:        pool,
-		}
-		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/clone", from.NodeID, from.VMID)
+func (c *PveClient) CloneVM(from, to NodeVMID, name, description, pool string) *Task {
+	return NewTask(func(task *Task) error {
+		return cmdutils.HandlePanic(func() error {
+			query := struct {
+				NewVMID     VMID   `url:"newid"`
+				TargetNode  NodeID `url:"target"`
+				Name        string `url:"name"`
+				Description string `url:"description"`
+				Pool        string `url:"pool"`
+			}{
+				NewVMID:     to.VMID,
+				TargetNode:  to.NodeID,
+				Name:        name,
+				Description: description,
+				Pool:        pool,
+			}
+			url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/clone", from.NodeID, from.VMID)
 
-		var taskID TaskID
-		data := struct{ Data interface{} }{&taskID}
-		err := c.reqJSON("POST", url, query, nil, &data)
-		if err != nil {
+			var taskID TaskID
+			data := struct{ Data interface{} }{&taskID}
+			err := c.reqJSON("POST", url, query, nil, &data)
+			if err != nil {
+				return err
+			}
+			task.NodeID = from.NodeID
+			task.TaskID = taskID
+			task.Client = c
 			return err
-		}
-		task = Task{
-			NodeID: from.NodeID,
-			TaskID: taskID,
-			Client: c,
-		}
-		return nil
+		})
 	})
-	return task, err
 }
 
 func (c *PveClient) taskStatus(task *Task) (TaskStatus, error) {
@@ -376,72 +374,60 @@ func (c *PveClient) ListAllVMs() ([]*VMInfo, error) {
 
 // DeleteVM deletes the VM.
 // If VM is running, it will be stop immediately and delete it.
-func (c *PveClient) DeleteVM(id NodeVMID) (Task, error) {
-	var task Task
-	err := cmdutils.HandlePanic(func() error {
-		info, err := c.VMInfo(id)
-		if err != nil {
-			return err
-		}
-		if info.Status == "running" {
-			// VM is running.
-			// Should stop VM before delete.
-			task, err = c.StopVM(id)
+func (c *PveClient) DeleteVM(id NodeVMID) *Task {
+	return NewTask(func(task *Task) error {
+		return cmdutils.HandlePanic(func() error {
+			url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s", id.NodeID, id.VMID)
+			taskID, err := c.reqTask("DELETE", url, nil, nil)
 			if err != nil {
 				return err
 			}
-			ctx, _ := context.WithTimeout(context.Background(), timeout)
-			err = task.Wait(ctx)
-			if err != nil {
-				return err
-			}
-		}
 
-		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s", id.NodeID, id.VMID)
-		taskID, err := c.reqTask("DELETE", url, nil, nil)
-		task = Task{
-			NodeID: id.NodeID,
-			TaskID: taskID,
-			Client: c,
-		}
-		return err
+			task.NodeID = id.NodeID
+			task.TaskID = taskID
+			task.Client = c
+			return nil
+		})
 	})
-	return task, err
 }
 
 // StartVM starts the VM.
-func (c *PveClient) StartVM(id NodeVMID) (Task, error) {
-	var task Task
-	err := cmdutils.HandlePanic(func() error {
-		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/status/start", id.NodeID, id.VMID)
+func (c *PveClient) StartVM(id NodeVMID) *Task {
+	return NewTask(func(task *Task) error {
+		return cmdutils.HandlePanic(func() error {
+			url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/status/start", id.NodeID, id.VMID)
 
-		taskID, err := c.reqTask("POST", url, nil, nil)
-		task = Task{
-			NodeID: id.NodeID,
-			TaskID: taskID,
-			Client: c,
-		}
-		return err
+			taskID, err := c.reqTask("POST", url, nil, nil)
+			if err != nil {
+				return err
+			}
+
+			task.NodeID = id.NodeID
+			task.TaskID = taskID
+			task.Client = c
+			return nil
+		})
 	})
-	return task, err
 }
 
 // StopVM stops the VM immediately.  This operation is not safe.
 // This is akin to pulling the power plug of a running computer and may cause VM data corruption.
-func (c *PveClient) StopVM(id NodeVMID) (Task, error) {
-	var task Task
-	err := cmdutils.HandlePanic(func() error {
-		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/status/stop", id.NodeID, id.VMID)
+func (c *PveClient) StopVM(id NodeVMID) *Task {
+	return NewTask(func(task *Task) error {
+		return cmdutils.HandlePanic(func() error {
+			url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/status/stop", id.NodeID, id.VMID)
 
-		taskID, err := c.reqTask("POST", url, nil, nil)
-		task = Task{
-			NodeID: id.NodeID,
-			TaskID: taskID,
-			Client: c,
-		}
-		return err
+			taskID, err := c.reqTask("POST", url, nil, nil)
+			if err != nil {
+				return err
+			}
+
+			task.NodeID = id.NodeID
+			task.TaskID = taskID
+			task.Client = c
+			return nil
+		})
 	})
-	return task, err
 }
 func (c *PveClient) req(method, path string, query interface{}, post interface{}) (r *grequests.Response, err error) {
 	t := time.NewTicker(RetryInterval)

@@ -116,12 +116,8 @@ func (p *PveProvisioner) Create() error {
 		for _, vm := range vms {
 			vm := vm
 			eg.Go(func() error {
-				task, err := c.StartVM(vm.ID)
-				if err != nil {
-					return err
-				}
 				ctx, _ := context.WithTimeout(context.Background(), StartTimeout)
-				return task.Wait(ctx)
+				return c.StartVM(vm.ID).Wait(ctx)
 			})
 		}
 	}
@@ -169,14 +165,14 @@ func (p *PveProvisioner) Delete() error {
 		for _, vm := range vms {
 			vm := vm
 			eg.Go(func() error {
-				task, err := c.DeleteVM(vm.ID)
+				ctx, _ := context.WithTimeout(context.Background(), DeleteTimeout)
+				err := c.StopVM(vm.ID).Wait(ctx)
+				if err != nil {
+					return errors.Wrap(err, "failed to stop VM")
+				}
+				err = c.DeleteVM(vm.ID).Wait(ctx)
 				if err != nil {
 					return errors.Wrap(err, "failed to delete VM")
-				}
-				ctx, _ := context.WithTimeout(context.Background(), DeleteTimeout)
-				err = task.Wait(ctx)
-				if err != nil {
-					return err
 				}
 
 				addresspool.GlobalPool.Free(vm.IP)
@@ -359,7 +355,7 @@ func (p *PveProvisioner) allocateVM(
 	}
 
 	var to NodeVMID
-	var task Task
+	var task *Task
 	func() {
 		PveCloneSem.Acquire(context.Background(), 1)
 		defer PveCloneSem.Release(1)
@@ -395,11 +391,9 @@ func (p *PveProvisioner) allocateVM(
 			time.Now().String(),
 			ip.String(),
 		)
-		task, err = c.CloneVM(from, to, vmName, description, vm.Pool)
-		if err != nil {
-			err = errors.Wrap(err, "failed to clone")
-			return
-		}
+		task = c.CloneVM(from, to, vmName, description, vm.Pool)
+		err = task.WaitFn(context.Background())
+		err = errors.Wrap(err, "failed to clone")
 	}()
 	if err != nil {
 		return err
