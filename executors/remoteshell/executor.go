@@ -44,7 +44,7 @@ func (e *Executor) Execute(script models.Script) models.ScriptResult {
 	// Wait for target host is available.
 	mr := &executors.MergedResult{}
 	ctx, _ := context.WithTimeout(context.Background(), StartTimeout)
-	timer := time.NewTimer(0)
+	ticker := time.NewTicker(time.Second)
 	for {
 		r := e.executeOne("echo OK CONNECTED")
 		if r.ExitCode() == 0 {
@@ -56,9 +56,8 @@ func (e *Executor) Execute(script models.Script) models.ScriptResult {
 		}
 		mr.Append(r)
 
-		timer.Reset(time.Second)
 		select {
-		case <-timer.C:
+		case <-ticker.C:
 		case <-ctx.Done():
 			return mr
 		}
