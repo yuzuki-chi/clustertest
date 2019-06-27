@@ -243,7 +243,7 @@ func (c *PveClient) ResizeVolume(id NodeVMID, disk string, size int) error {
 			Size: fmt.Sprintf("%dG", size),
 		}
 		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/resize", id.NodeID, id.VMID)
-		_, err := c.req("PUT", url, query, nil)
+		_, err := c.reqString("PUT", url, query, nil)
 		return err
 	})
 }
@@ -261,7 +261,7 @@ func (c *PveClient) UpdateConfig(id NodeVMID, config *Config) error {
 			newConfig.SSHKeys = urlEncode(config.SSHKeys)
 			config = newConfig
 		}
-		_, err := c.req("PUT", url, config, nil)
+		_, err := c.reqString("PUT", url, config, nil)
 		return err
 	})
 }
@@ -429,6 +429,9 @@ func (c *PveClient) StopVM(id NodeVMID) *Task {
 		})
 	})
 }
+
+// req() invokes an API and return response object.
+// NOTE: This method does not close the connection. Usually you should use other helper methods like reqJSON() and reqString().
 func (c *PveClient) req(method, path string, query interface{}, post interface{}) (r *grequests.Response, err error) {
 	t := time.NewTicker(RetryInterval)
 	for i := 0; i < MaxRetry; i++ {
@@ -441,7 +444,6 @@ func (c *PveClient) req(method, path string, query interface{}, post interface{}
 			r, err = grequests.DoRegularRequest(method, url, option)
 			if err != nil {
 				reqLogger.Println(err)
-				r = nil
 				err = errors.Wrap(err, "failed to request")
 				return
 			}
@@ -450,14 +452,16 @@ func (c *PveClient) req(method, path string, query interface{}, post interface{}
 				status := r.StatusCode
 				body := r.String()
 				reqLogger.Println(body)
-				r = nil
 				err = NewStatusError(status, body)
 				return
 			}
-			return
 		}()
 
 		if err != nil {
+			if r != nil {
+				r.Close()
+				r = nil
+			}
 			if e, ok := err.(*StatusError); ok && (e.StatusCode == 403 || 500 <= e.StatusCode && e.StatusCode < 600) {
 				// Wait for few seconds.
 				reqLogger.Println("retrying ...")
@@ -468,6 +472,14 @@ func (c *PveClient) req(method, path string, query interface{}, post interface{}
 		return
 	}
 	return
+}
+func (c *PveClient) reqString(method, path string, query interface{}, post interface{}) (string, error) {
+	r, err := c.req(method, path, query, post)
+	if err != nil {
+		return "", err
+	}
+	s := r.String()
+	return s, r.Error
 }
 func (c *PveClient) reqJSON(method, path string, query, post, js interface{}) error {
 	r, err := c.req(method, path, query, post)
