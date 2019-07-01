@@ -162,15 +162,18 @@ func (c *PveClient) RandomVMID() (VMID, error) {
 func (c *PveClient) CloneVM(from, to NodeVMID, name, description, pool string) *Task {
 	return NewTask(func(task *Task) error {
 		return cmdutils.HandlePanic(func() error {
+			if from.NodeID != to.NodeID {
+				return errors.Errorf("mismatch NodeID: from=%s, to=%s", from.NodeID, to.NodeID)
+			}
+
+			// TODO: shared storageを使うなら、"target"オプションを追加。
 			query := struct {
 				NewVMID     VMID   `url:"newid"`
-				TargetNode  NodeID `url:"target"`
 				Name        string `url:"name"`
 				Description string `url:"description"`
 				Pool        string `url:"pool"`
 			}{
 				NewVMID:     to.VMID,
-				TargetNode:  to.NodeID,
 				Name:        name,
 				Description: description,
 				Pool:        pool,

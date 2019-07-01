@@ -78,12 +78,8 @@ func (p *PveProvisioner) Reserve() error {
 		return addresspool.GlobalPool.Transaction(func(pool *addresspool.AddressPoolTx) error {
 			eg := errgroup.Group{}
 			for vmGroupName, vm := range p.spec.VMs {
-				from, err := c.IDFromName(vm.Template)
-				if err != nil {
-					return errors.Wrapf(err, "not found template: %s", vm.Template)
-				}
 				for i := 0; i < vm.Nodes; i++ {
-					err := p.allocateVM(c, conf, &eg, segs, scheduler, pool, vmGroupName, vm, from, i)
+					err := p.allocateVM(c, conf, &eg, segs, scheduler, pool, vmGroupName, vm, i)
 					if err != nil {
 						return err
 					}
@@ -335,7 +331,6 @@ func (p *PveProvisioner) allocateVM(
 	pool *addresspool.AddressPoolTx,
 	vmGroupName string,
 	vm *PveVM,
-	from NodeVMID,
 	i int,
 ) error {
 	// Allocate resources.
@@ -352,6 +347,13 @@ func (p *PveProvisioner) allocateVM(
 	nodeID, err := scheduler.ScheduleWait(ctx, vmSpec)
 	if err != nil {
 		return err
+	}
+
+	// Clone template.
+	template := p.templateName(vm.Template, nodeID)
+	from, err := c.IDFromName(template)
+	if err != nil {
+		return errors.Wrapf(err, "not found template (%s)", template)
 	}
 
 	var to NodeVMID
@@ -433,6 +435,9 @@ func (p *PveProvisioner) allocateVM(
 		return nil
 	})
 	return nil
+}
+func (p *PveProvisioner) templateName(name string, node NodeID) string {
+	return fmt.Sprintf("%s-%s", name, node)
 }
 
 // byte2megabyte converts byte to MiB.
