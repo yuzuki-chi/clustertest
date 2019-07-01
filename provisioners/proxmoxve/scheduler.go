@@ -13,6 +13,7 @@ import (
 
 // 4096MiB = 4GiB
 const DEFAULT_SYSTEM_MEM = 4096
+const DEFAULT_CPU_OVER_COMMITMENT_RATIO = 4
 
 // TODO: 複数のクラスタに対応できない
 var GlobalScheduler = &Scheduler{}
@@ -131,6 +132,10 @@ func (s *Scheduler) UpdateNodes(fn func() ([]*Node, error), updateReserved bool)
 			newNode := &Node{}
 			*newNode = *n
 			n = newNode
+		}
+
+		if n.VCPU.Max == 0 {
+			n.VCPU.Max = n.PCPU * DEFAULT_CPU_OVER_COMMITMENT_RATIO
 		}
 
 		if n.VMem.System == 0 {
