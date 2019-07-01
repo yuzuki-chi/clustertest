@@ -8,19 +8,32 @@ import (
 	"github.com/yuuki0xff/clustertest/rpc"
 	"github.com/yuuki0xff/clustertest/worker"
 	"golang.org/x/sync/errgroup"
+	"os"
 )
 
 func rootCmdFn(cmd *cobra.Command, args []string) error {
+	jobs, err := cmd.Flags().GetInt32("jobs")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "ERROR: invalid args", err)
+		return nil
+	}
+	if jobs <= 0 {
+		fmt.Fprintln(os.Stderr, "ERROR: --jobs must be larger than 0")
+		return nil
+	}
+
 	db := databases.NewMemTaskDB()
 
 	ctx := context.Background()
 	g, _ := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		w := worker.Worker{
-			Queue: db,
-		}
-		return w.Serve(ctx)
-	})
+	for i := int32(0); i < jobs; i++ {
+		g.Go(func() error {
+			w := worker.Worker{
+				Queue: db,
+			}
+			return w.Serve(ctx)
+		})
+	}
 	g.Go(func() error {
 		addr := "0.0.0.0:9571"
 		fmt.Printf("Listening on %s\n", addr)

@@ -23,12 +23,18 @@ import (
 )
 
 const PveMaxVMID = 999999999
-const timeout = 10 * time.Second
+const timeout = 5 * time.Minute
 const StoppedVMStatus = VMStatus("stopped")
 const RunningVMStatus = VMStatus("running")
 const MaxConn = 4
+const MaxRetry = 30
+const RetryInterval = 3 * time.Second
 
 var reqLogger = log.New(ioutil.Discard, "", 0)
+
+// TODO: 接続先のサーバ毎にコネクション数を制限
+// sem limits max connection to API server.
+var sem = semaphore.NewWeighted(MaxConn)
 
 func init() {
 	if os.Getenv("CLUSTERTEST_DEBUG") != "" {
@@ -46,8 +52,6 @@ type PveClientOption struct {
 // See https://pve.proxmox.com/pve-docs/api-viewer/
 type PveClient struct {
 	PveClientOption
-	// sem limits max connection to API server.
-	sem         *semaphore.Weighted
 	token       *apiToken
 	_httpClient *http.Client
 }
@@ -108,7 +112,6 @@ type Config struct {
 func NewPveClient(option PveClientOption) *PveClient {
 	return &PveClient{
 		PveClientOption: option,
-		sem:             semaphore.NewWeighted(MaxConn),
 	}
 }
 
@@ -156,38 +159,39 @@ func (c *PveClient) RandomVMID() (VMID, error) {
 }
 
 // CloneVM creates a copy of virtual machine/template.
-func (c *PveClient) CloneVM(from, to NodeVMID, name, description, pool string) (Task, error) {
-	var task Task
-	err := cmdutils.HandlePanic(func() error {
-		query := struct {
-			NewVMID     VMID   `url:"newid"`
-			TargetNode  NodeID `url:"target"`
-			Name        string `url:"name"`
-			Description string `url:"description"`
-			Pool        string `url:"pool"`
-		}{
-			NewVMID:     to.VMID,
-			TargetNode:  to.NodeID,
-			Name:        name,
-			Description: description,
-			Pool:        pool,
-		}
-		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/clone", from.NodeID, from.VMID)
+func (c *PveClient) CloneVM(from, to NodeVMID, name, description, pool string) *Task {
+	return NewTask(func(task *Task) error {
+		return cmdutils.HandlePanic(func() error {
+			if from.NodeID != to.NodeID {
+				return errors.Errorf("mismatch NodeID: from=%s, to=%s", from.NodeID, to.NodeID)
+			}
 
-		var taskID TaskID
-		data := struct{ Data interface{} }{&taskID}
-		err := c.reqJSON("POST", url, query, nil, &data)
-		if err != nil {
+			// TODO: shared storageを使うなら、"target"オプションを追加。
+			query := struct {
+				NewVMID     VMID   `url:"newid"`
+				Name        string `url:"name"`
+				Description string `url:"description"`
+				Pool        string `url:"pool"`
+			}{
+				NewVMID:     to.VMID,
+				Name:        name,
+				Description: description,
+				Pool:        pool,
+			}
+			url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/clone", from.NodeID, from.VMID)
+
+			var taskID TaskID
+			data := struct{ Data interface{} }{&taskID}
+			err := c.reqJSON("POST", url, query, nil, &data)
+			if err != nil {
+				return err
+			}
+			task.NodeID = from.NodeID
+			task.TaskID = taskID
+			task.Client = c
 			return err
-		}
-		task = Task{
-			NodeID: from.NodeID,
-			TaskID: taskID,
-			Client: c,
-		}
-		return nil
+		})
 	})
-	return task, err
 }
 
 func (c *PveClient) taskStatus(task *Task) (TaskStatus, error) {
@@ -242,7 +246,7 @@ func (c *PveClient) ResizeVolume(id NodeVMID, disk string, size int) error {
 			Size: fmt.Sprintf("%dG", size),
 		}
 		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/resize", id.NodeID, id.VMID)
-		_, err := c.req("PUT", url, query, nil)
+		_, err := c.reqString("PUT", url, query, nil)
 		return err
 	})
 }
@@ -260,7 +264,7 @@ func (c *PveClient) UpdateConfig(id NodeVMID, config *Config) error {
 			newConfig.SSHKeys = urlEncode(config.SSHKeys)
 			config = newConfig
 		}
-		_, err := c.req("PUT", url, config, nil)
+		_, err := c.reqString("PUT", url, config, nil)
 		return err
 	})
 }
@@ -373,91 +377,112 @@ func (c *PveClient) ListAllVMs() ([]*VMInfo, error) {
 
 // DeleteVM deletes the VM.
 // If VM is running, it will be stop immediately and delete it.
-func (c *PveClient) DeleteVM(id NodeVMID) (Task, error) {
-	var task Task
-	err := cmdutils.HandlePanic(func() error {
-		info, err := c.VMInfo(id)
-		if err != nil {
-			return err
-		}
-		if info.Status == "running" {
-			// VM is running.
-			// Should stop VM before delete.
-			task, err = c.StopVM(id)
+func (c *PveClient) DeleteVM(id NodeVMID) *Task {
+	return NewTask(func(task *Task) error {
+		return cmdutils.HandlePanic(func() error {
+			url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s", id.NodeID, id.VMID)
+			taskID, err := c.reqTask("DELETE", url, nil, nil)
 			if err != nil {
 				return err
 			}
-			ctx, _ := context.WithTimeout(context.Background(), timeout)
-			err = task.Wait(ctx)
-			if err != nil {
-				return err
-			}
-		}
 
-		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s", id.NodeID, id.VMID)
-		taskID, err := c.reqTask("DELETE", url, nil, nil)
-		task = Task{
-			NodeID: id.NodeID,
-			TaskID: taskID,
-			Client: c,
-		}
-		return err
+			task.NodeID = id.NodeID
+			task.TaskID = taskID
+			task.Client = c
+			return nil
+		})
 	})
-	return task, err
 }
 
 // StartVM starts the VM.
-func (c *PveClient) StartVM(id NodeVMID) (Task, error) {
-	var task Task
-	err := cmdutils.HandlePanic(func() error {
-		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/status/start", id.NodeID, id.VMID)
+func (c *PveClient) StartVM(id NodeVMID) *Task {
+	return NewTask(func(task *Task) error {
+		return cmdutils.HandlePanic(func() error {
+			url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/status/start", id.NodeID, id.VMID)
 
-		taskID, err := c.reqTask("POST", url, nil, nil)
-		task = Task{
-			NodeID: id.NodeID,
-			TaskID: taskID,
-			Client: c,
-		}
-		return err
+			taskID, err := c.reqTask("POST", url, nil, nil)
+			if err != nil {
+				return err
+			}
+
+			task.NodeID = id.NodeID
+			task.TaskID = taskID
+			task.Client = c
+			return nil
+		})
 	})
-	return task, err
 }
 
 // StopVM stops the VM immediately.  This operation is not safe.
 // This is akin to pulling the power plug of a running computer and may cause VM data corruption.
-func (c *PveClient) StopVM(id NodeVMID) (Task, error) {
-	var task Task
-	err := cmdutils.HandlePanic(func() error {
-		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/status/stop", id.NodeID, id.VMID)
+func (c *PveClient) StopVM(id NodeVMID) *Task {
+	return NewTask(func(task *Task) error {
+		return cmdutils.HandlePanic(func() error {
+			url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/status/stop", id.NodeID, id.VMID)
 
-		taskID, err := c.reqTask("POST", url, nil, nil)
-		task = Task{
-			NodeID: id.NodeID,
-			TaskID: taskID,
-			Client: c,
-		}
-		return err
+			taskID, err := c.reqTask("POST", url, nil, nil)
+			if err != nil {
+				return err
+			}
+
+			task.NodeID = id.NodeID
+			task.TaskID = taskID
+			task.Client = c
+			return nil
+		})
 	})
-	return task, err
 }
-func (c *PveClient) req(method, path string, query interface{}, post interface{}) (*grequests.Response, error) {
-	c.sem.Acquire(context.Background(), 1)
-	defer c.sem.Release(1)
 
-	url, option := c.ro(path, query, post)
-	reqLogger.Println(method, url, query, post)
-	r, err := grequests.DoRegularRequest(method, url, option)
+// req() invokes an API and return response object.
+// NOTE: This method does not close the connection. Usually you should use other helper methods like reqJSON() and reqString().
+func (c *PveClient) req(method, path string, query interface{}, post interface{}) (r *grequests.Response, err error) {
+	t := time.NewTicker(RetryInterval)
+	for i := 0; i < MaxRetry; i++ {
+		func() {
+			sem.Acquire(context.Background(), 1)
+			defer sem.Release(1)
+
+			url, option := c.ro(path, query, post)
+			reqLogger.Println(method, url, query, post)
+			r, err = grequests.DoRegularRequest(method, url, option)
+			if err != nil {
+				reqLogger.Println(err)
+				err = errors.Wrap(err, "failed to request")
+				return
+			}
+			reqLogger.Println(r.StatusCode)
+			if !r.Ok {
+				status := r.StatusCode
+				body := r.String()
+				reqLogger.Println(body)
+				err = NewStatusError(status, body)
+				return
+			}
+		}()
+
+		if err != nil {
+			if r != nil {
+				r.Close()
+				r = nil
+			}
+			if e, ok := err.(*StatusError); ok && (e.StatusCode == 403 || 500 <= e.StatusCode && e.StatusCode < 600) {
+				// Wait for few seconds.
+				reqLogger.Println("retrying ...")
+				<-t.C
+				continue
+			}
+		}
+		return
+	}
+	return
+}
+func (c *PveClient) reqString(method, path string, query interface{}, post interface{}) (string, error) {
+	r, err := c.req(method, path, query, post)
 	if err != nil {
-		reqLogger.Println(err)
-		return nil, errors.Wrap(err, "failed to request")
+		return "", err
 	}
-	reqLogger.Println(r.StatusCode)
-	if !r.Ok {
-		body := r.String()
-		reqLogger.Println(body)
-		return nil, errors.Errorf("received unexpected status code: %d, response=%s", r.StatusCode, body)
-	}
-	return r, nil
+	s := r.String()
+	return s, r.Error
 }
 func (c *PveClient) reqJSON(method, path string, query, post, js interface{}) error {
 	r, err := c.req(method, path, query, post)

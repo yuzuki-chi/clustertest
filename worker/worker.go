@@ -62,8 +62,22 @@ func (w *Worker) runTask(id models.TaskID, task models.Task) (models.TaskResult,
 		pros = append(pros, pro)
 	}
 
-	// Create resources.
+	// Reserve resources.
 	ec := make(chan error, len(pros))
+	co.ParForAll(pros, func(i int) {
+		err := pros[i].Reserve()
+		if err != nil {
+			ec <- err
+		}
+	})
+	close(ec)
+	if err = <-ec; err != nil {
+		result.ErrorMsg = err.Error()
+		return result, nil
+	}
+
+	// Create resources.
+	ec = make(chan error, len(pros))
 	co.ParForAll(pros, func(i int) {
 		err := pros[i].Create()
 		if err != nil {

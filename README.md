@@ -78,3 +78,9 @@ ExitCode: 0
 Output:
 ```
 
+## How to use ProxmoxVE provisioner
+1. Create templates with cloud-init support.
+2. Copy templates to all nodes.  
+   Naming conventions for templates: "<original_template_name>-<node_name>"
+3. Create clustertest configuration.  See `clustertest.yaml`.
+4. `clustertest task start <file_name>`

@@ -38,6 +38,7 @@ func HandlePanic(fn func() error) (err error) {
 		if obj := recover(); obj != nil {
 			err = obj.(error)
 		}
+		err = errors.WithStack(err)
 	}()
 	err = fn()
 	return

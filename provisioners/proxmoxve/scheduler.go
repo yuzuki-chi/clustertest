@@ -1,16 +1,25 @@
 package proxmoxve
 
 import (
+	"context"
+	"fmt"
 	"github.com/pkg/errors"
 	. "github.com/yuuki0xff/clustertest/provisioners/proxmoxve/api"
+	"log"
+	"strings"
 	"sync"
+	"time"
 )
 
 // 4096MiB = 4GiB
 const DEFAULT_SYSTEM_MEM = 4096
+const DEFAULT_CPU_OVER_COMMITMENT_RATIO = 4
 
 // TODO: 複数のクラスタに対応できない
 var GlobalScheduler = &Scheduler{}
+
+// FullError means failed to allocate resources.
+var FullError = errors.Errorf("full")
 
 type Node struct {
 	NodeID NodeID
@@ -66,6 +75,29 @@ type ScheduleTx struct {
 	reverted  bool
 }
 
+func (n *Node) String() string {
+	return strings.Trim(strings.Join([]string{
+		fmt.Sprintln("Node", n.NodeID),
+		fmt.Sprintln("  VCPU", "used", n.VCPU.Used, "reserved", n.VCPU.Reserved),
+		fmt.Sprintln("  VMem", "used", n.VMem.Used, "reserved", n.VMem.Reserved),
+	}, ""), "\n")
+}
+
+func init() {
+	// Dump  scheduler status to debug.
+	go func() {
+		t := time.NewTicker(10 * time.Second)
+		for range t.C {
+			if GlobalScheduler == nil {
+				continue
+			}
+			for _, n := range GlobalScheduler.nodes {
+				log.Println(n)
+			}
+		}
+	}()
+}
+
 // UpdateNodes updates all nodes status.
 // If updateReserved is true, Scheduler.nodes.VCPU.Reserved and Scheduler.nodes.VMem.Reserved parameters are updated.
 func (s *Scheduler) UpdateNodes(fn func() ([]*Node, error), updateReserved bool) error {
@@ -102,6 +134,10 @@ func (s *Scheduler) UpdateNodes(fn func() ([]*Node, error), updateReserved bool)
 			n = newNode
 		}
 
+		if n.VCPU.Max == 0 {
+			n.VCPU.Max = n.PCPU * DEFAULT_CPU_OVER_COMMITMENT_RATIO
+		}
+
 		if n.VMem.System == 0 {
 			n.VMem.System = DEFAULT_SYSTEM_MEM
 		}
@@ -134,7 +170,7 @@ func (s *Scheduler) Schedule(spec VMSpec) (NodeID, error) {
 		return id, nil
 	}
 	// Not found a best node.
-	return NodeID(""), errors.Errorf("full")
+	return NodeID(""), FullError
 }
 
 // Use notifies it to scheduler that specified VM started to running.
@@ -149,10 +185,10 @@ func (s *Scheduler) Use(id NodeID, spec VMSpec) {
 		panic(errors.Errorf("not found node: %s", id))
 	}
 	if node.VCPU.Reserved-spec.Processors < 0 {
-		panic(errors.Errorf("lacking reserved vCPUs"))
+		panic(errors.Errorf("lacking reserved vCPUs: %d %d", node.VCPU.Reserved, spec.Processors))
 	}
 	if node.VMem.Reserved-spec.Memory < 0 {
-		panic(errors.Errorf("lacking reserved vMem"))
+		panic(errors.Errorf("lacking reserved vMem: %d %d", node.VMem.Reserved, spec.Memory))
 	}
 
 	node.VCPU.Reserved -= spec.Processors
@@ -173,10 +209,10 @@ func (s *Scheduler) Cancel(id NodeID, spec VMSpec) {
 		panic(errors.Errorf("not found node: %s", id))
 	}
 	if node.VCPU.Reserved-spec.Processors < 0 {
-		panic(errors.Errorf("lacking reserved vCPUs"))
+		panic(errors.Errorf("lacking reserved vCPUs: %d %d", node.VCPU.Reserved, spec.Processors))
 	}
 	if node.VMem.Reserved-spec.Memory < 0 {
-		panic(errors.Errorf("lacking reserved vMem"))
+		panic(errors.Errorf("lacking reserved vMem: %d %d", node.VMem.Reserved, spec.Memory))
 	}
 
 	node.VCPU.Reserved -= spec.Processors
@@ -192,10 +228,10 @@ func (s *Scheduler) Free(id NodeID, spec VMSpec) {
 		panic(errors.Errorf("not found node: %s", id))
 	}
 	if node.VCPU.Used-spec.Processors < 0 {
-		panic(errors.Errorf("lacking reserved vCPUs"))
+		panic(errors.Errorf("lacking reserved vCPUs: %d %d", node.VCPU.Used, spec.Processors))
 	}
 	if node.VMem.Used-spec.Memory < 0 {
-		panic(errors.Errorf("lacking reserved vMem"))
+		panic(errors.Errorf("lacking reserved vMem: %d %d", node.VMem.Used, spec.Memory))
 	}
 
 	node.VCPU.Used -= spec.Processors
@@ -239,6 +275,23 @@ func (tx *ScheduleTx) Schedule(spec VMSpec) (NodeID, error) {
 		Spec VMSpec
 	}{ID: id, Spec: spec})
 	return id, nil
+}
+
+// ScheduleWait waits for allocate resources and reserves it.
+func (tx *ScheduleTx) ScheduleWait(ctx context.Context, spec VMSpec) (NodeID, error) {
+	t := time.NewTicker(time.Second)
+	for {
+		select {
+		case <-ctx.Done():
+			return NodeID(""), errors.New("timeout ScheduleWait()")
+		case <-t.C:
+			id, err := tx.Schedule(spec)
+			if err == FullError {
+				continue
+			}
+			return id, err
+		}
+	}
 }
 
 // Commit allocates all reserved resources while this transaction.
