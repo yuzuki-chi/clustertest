@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var taskSem = semaphore.NewWeighted(2)
+var taskSem = semaphore.NewWeighted(4)
 
 type TaskID string
 type TaskStatus struct {
