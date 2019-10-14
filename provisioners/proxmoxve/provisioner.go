@@ -424,6 +424,7 @@ func (p *PveProvisioner) allocateVM(
 		err = c.UpdateConfig(to, &Config{
 			CPUCores:   vm.Processors,
 			CPUSockets: 1,
+			VCPUs:      vm.Processors,
 			Memory:     vm.MemorySize,
 			User:       p.spec.User.User,
 			SSHKeys:    p.spec.User.SSHPublicKey,

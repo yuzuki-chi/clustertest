@@ -98,6 +98,8 @@ type Config struct {
 	CPUCores int `url:"cores" json:"cores"`
 	// CPU sockets
 	CPUSockets int `url:"sockets" json:"sockets"`
+	// VCPU cores
+	VCPUs int `url:"vcpus" json:"vcpus"`
 	// Memory size in megabytes
 	Memory int `url:"memory" json:"memory"`
 	// Cloud-init: user name
