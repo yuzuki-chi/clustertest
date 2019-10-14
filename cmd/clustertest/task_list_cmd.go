@@ -8,6 +8,9 @@ import (
 	"github.com/yuuki0xff/clustertest/rpc"
 	"io"
 	"os"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 func taskListFn(cmd *cobra.Command, args []string) error {
@@ -22,6 +25,20 @@ func taskListFn(cmd *cobra.Command, args []string) error {
 		ShowError(err)
 		return nil
 	}
+
+	// Sort by ID.
+	sort.SliceStable(tasks, func(i, j int) bool {
+		left := tasks[i].TaskID().String()
+		right := tasks[j].TaskID().String()
+
+		a, err1 := strconv.Atoi(left)
+		b, err2 := strconv.Atoi(right)
+		if err1 != nil || err2 != nil {
+			// Failed convert to number.
+			return strings.Compare(left, right) < 0
+		}
+		return a < b
+	})
 
 	taskListRender{}.Render(os.Stdout, tasks)
 	return nil
