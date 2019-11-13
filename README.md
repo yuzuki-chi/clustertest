@@ -1,7 +1,6 @@
 # clustertest
-\[WIP\] Clustertest is an automated testing system for clustered system.
-
-NOTE: Clustertest is developed for test the elton. Currently I'm focusing on elton development. So it is not actively developed.
+Clustertest is an automated system testing tool.  It possible to build/deploy a system, execute test cases, collect logs
+and destroy system.  These can be done without manual operation.
 
 ## Requirement
 * Linux Server
