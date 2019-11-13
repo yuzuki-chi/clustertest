@@ -284,6 +284,11 @@ func (p *PveProvisioner) updateSchedulerStatus(c *PveClient) (err error) {
 
 			var nodes []*Node
 			for _, n := range nodeInfos {
+				if n.Status != OnlineNodeStatus {
+					// This node is not available.  MUST NOT deploy any VM.
+					continue
+				}
+
 				var totalCPUs int
 				var totalMem int
 				vms, err := c.ListVMs(n.ID)
