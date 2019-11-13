@@ -24,6 +24,9 @@ import (
 
 const PveMaxVMID = 999999999
 const timeout = 5 * time.Minute
+const UnknownNodeStatus = NodeStatus("unknown")
+const OnlineNodeStatus = NodeStatus("online")
+const OfflineNodeStatus = NodeStatus("offline")
 const StoppedVMStatus = VMStatus("stopped")
 const RunningVMStatus = VMStatus("running")
 const MaxConn = 4
@@ -61,6 +64,7 @@ type apiToken struct {
 	Ticket              string
 }
 type NodeID string
+type NodeStatus string
 type VMID string
 type NodeVMID struct {
 	NodeID NodeID
@@ -79,7 +83,7 @@ type NodeInfo struct {
 	//  - unknown
 	//  - online
 	//  - offline
-	Status string
+	Status NodeStatus
 }
 type VMInfo struct {
 	ID   NodeVMID
