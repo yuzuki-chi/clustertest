@@ -426,6 +426,13 @@ func (p *PveProvisioner) allocateVM(
 				return errors.Wrap(err, "failed to resize")
 			}
 		}
+
+		// WORKAROUND: Reconnect cloud-init drive to ProxmoxVE bugs.
+		err = c.FixCloudInitDrive(to)
+		if err != nil {
+			return errors.Wrap(err, "failed to reconnect cloud-init drive")
+		}
+
 		err = c.UpdateConfig(to, &Config{
 			CPUCores:   vm.Processors,
 			CPUSockets: 1,

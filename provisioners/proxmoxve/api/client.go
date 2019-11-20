@@ -257,6 +257,30 @@ func (c *PveClient) ResizeVolume(id NodeVMID, disk string, size int) error {
 	})
 }
 
+// FixCloudInitDrive reconnects cloud-init drive.
+// This method provides a workaround for the ProxmoxVE bug.
+func (c *PveClient) FixCloudInitDrive(id NodeVMID) error {
+	return cmdutils.HandlePanic(func() error {
+		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/config", id.NodeID, id.VMID)
+
+		// Remove cloud-init drive.
+		config := struct {
+			Drive string `url:"ide2"`
+		}{Drive: "none"}
+		_, err := c.reqString("PUT", url, config, nil)
+		if err != nil {
+			return err
+		}
+
+		// Connect cloud-init drive.
+		config = struct {
+			Drive string `url:"ide2"`
+		}{Drive: "ssd:cloudinit"} // TODO: Get storage name from parameters.
+		_, err = c.reqString("PUT", url, config, nil)
+		return err
+	})
+}
+
 // UpdateConfig updates configuration of the specified VM.
 func (c *PveClient) UpdateConfig(id NodeVMID, config *Config) error {
 	return cmdutils.HandlePanic(func() error {
