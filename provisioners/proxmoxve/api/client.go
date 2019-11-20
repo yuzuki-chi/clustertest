@@ -240,7 +240,7 @@ func (c *PveClient) taskLog(task *Task, start, limit int) ([]string, error) {
 	return lines, err
 }
 
-// ResizeVolume changes size of the disk.
+// ResizeVolume increases disk size.
 // The size parameter is in gigabytes.
 func (c *PveClient) ResizeVolume(id NodeVMID, disk string, size int) error {
 	return cmdutils.HandlePanic(func() error {
@@ -249,7 +249,7 @@ func (c *PveClient) ResizeVolume(id NodeVMID, disk string, size int) error {
 			Size string `url:"size"`
 		}{
 			Disk: disk,
-			Size: fmt.Sprintf("%dG", size),
+			Size: fmt.Sprintf("+%dG", size),
 		}
 		url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/resize", id.NodeID, id.VMID)
 		_, err := c.reqString("PUT", url, query, nil)
