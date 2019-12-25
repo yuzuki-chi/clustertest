@@ -22,6 +22,22 @@ func rootCmdFn(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	listen, err := cmd.Flags().GetString("listen")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "ERROR: invalid args", err)
+		return nil
+	}
+
+	port, err := cmd.Flags().GetInt32("port")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "ERROR: invalid args", err)
+		return nil
+	}
+	if port <= 0 {
+		fmt.Fprintln(os.Stderr, "ERROR: --port must be larger than 0")
+		return nil
+	}
+
 	db := databases.NewMemTaskDB()
 
 	ctx := context.Background()
@@ -35,7 +51,7 @@ func rootCmdFn(cmd *cobra.Command, args []string) error {
 		})
 	}
 	g.Go(func() error {
-		addr := "0.0.0.0:9571"
+		addr := fmt.Sprintf("%s:%d", listen, port)
 		fmt.Printf("Listening on %s\n", addr)
 		return rpc.ServeServer(addr, db)
 	})

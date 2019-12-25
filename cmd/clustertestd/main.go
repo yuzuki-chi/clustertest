@@ -41,6 +41,8 @@ var killCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(statusCmd, stopCmd, killCmd)
 	rootCmd.Flags().Int32P("jobs", "j", 8, "number of jobs to run simultaneously")
+	rootCmd.Flags().StringP("listen", "l", "0.0.0.0", "listen address")
+	rootCmd.Flags().Int32P("port", "p", 9571, "port to connect to clustertestd RPC")
 }
 
 func main() {
