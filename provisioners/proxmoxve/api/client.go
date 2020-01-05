@@ -604,7 +604,7 @@ func makeDialer(fingerprint []byte, skipCAVerification bool) Dialer {
 				return c, nil
 			}
 		}
-		return nil, fmt.Errorf("pinned key not found: %s", fingerprint)
+		return nil, fmt.Errorf("pinned key not found: %s", hex.EncodeToString(fingerprint))
 	}
 }
 func hex2bin(s string) ([]byte, error) {
