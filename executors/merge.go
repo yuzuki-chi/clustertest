@@ -57,7 +57,7 @@ func (mr *MergedResult) ExitCode() int {
 	if len(mr.results) == 0 {
 		return 0
 	}
-	for i, _ := range mr.results {
+	for i := range mr.results {
 		result := mr.results[i]
 		if result.ExitCode() != 0 {
 			return result.ExitCode()
