@@ -57,8 +57,13 @@ func (mr *MergedResult) ExitCode() int {
 	if len(mr.results) == 0 {
 		return 0
 	}
-	last := mr.results[len(mr.results)-1]
-	return last.ExitCode()
+	for i, _ := range mr.results {
+		result := mr.results[i]
+		if result.ExitCode() != 0 {
+			return result.ExitCode()
+		}
+	}
+	return 0
 }
 func (mr *MergedResult) getSeparator() string {
 	if mr.WithoutSeparator {
