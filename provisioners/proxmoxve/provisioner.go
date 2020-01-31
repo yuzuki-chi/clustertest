@@ -30,7 +30,7 @@ const vmConfigsAttrName = "provisioners/proxmox-ve/vm-configs"
 // TODO
 // タスクが動いている最中、特にReserve()とCreate()の間にschedulerStatusが実行されてしまうと、
 // 確保済み扱いのCPUやメモリがカウントされない。このため、リソース開放時にpanicする。
-// これを回避するために Scheduler.UpdateNodes() の実行は1階限りに制限する。
+// これを回避するために Scheduler.UpdateNodes() の実行は1回限りに制限する。
 var PveUpdateSchedulerOnce sync.Once
 
 // TODO
