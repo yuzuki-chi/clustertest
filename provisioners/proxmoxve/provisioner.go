@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/republicprotocol/co-go"
 	"github.com/yuuki0xff/clustertest/executors"
 	"github.com/yuuki0xff/clustertest/executors/callback"
 	"github.com/yuuki0xff/clustertest/executors/localshell"
@@ -231,11 +232,18 @@ func (p *PveProvisioner) ScriptExecutor(scriptType models.ScriptType) models.Scr
 	return &callback.Executor{
 		Fn: func(script models.Script) models.ScriptResult {
 			mr := &executors.MergedResult{}
+			lock := sync.Mutex{}
 			vmConfigs := script.GetAttr(vmConfigsAttrName).([]VMConfig)
-			for _, c := range vmConfigs {
+
+			co.ParForAll(vmConfigs, func(i int) {
+				c := vmConfigs[i]
 				e := newExecutor(&c, script)
-				mr.Append(e.Execute(script))
-			}
+				result := e.Execute(script)
+
+				lock.Lock()
+				mr.Append(result)
+				lock.Unlock()
+			})
 			return mr
 		},
 	}
