@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	. "github.com/yuuki0xff/clustertest/provisioners/proxmoxve/api"
 	"log"
+	"math"
 	"strings"
 	"sync"
 	"time"
@@ -153,6 +154,8 @@ func (s *Scheduler) Schedule(spec VMSpec) (NodeID, error) {
 	s.m.Lock()
 	defer s.m.Unlock()
 
+	bestId := NodeID("")
+	bestScore := math.MaxFloat64 // Lower is better.
 	for id, n := range s.nodes {
 		if n.VCPU.Max > 0 {
 			if n.VCPU.Max-(n.VCPU.Used+n.VCPU.Reserved) < spec.Processors {
@@ -164,13 +167,33 @@ func (s *Scheduler) Schedule(spec VMSpec) (NodeID, error) {
 			// insufficient memory exists.
 			continue
 		}
-		// Found a best node.
-		n.VCPU.Reserved += spec.Processors
-		n.VMem.Reserved += spec.Memory
-		return id, nil
+		// As VCPU over-commit rate increases, cpuRate increases and score get worse.
+		cpuRate := float64(n.VCPU.Used+n.VCPU.Reserved+spec.Processors) / float64(n.PCPU)
+		// As free memory decreases, memRate increases and score get worse. If memory is over-committed, memRate rises
+		// greatly.
+		memRate := math.Pow(float64(n.PMem)/math.Max(float64(n.PMem-n.VMem.System-n.VMem.Used-n.VCPU.Reserved-spec.Memory), 0.001), 2)
+		score := cpuRate*10 + memRate
+
+		if n.PCPU == 0 {
+			log.Fatal("n.PCPU is 0")
+		}
+		if score < 0 {
+			log.Fatalf("invalid score: score=%f", score)
+		}
+		if score < bestScore {
+			bestId = id
+			bestScore = score
+		}
 	}
-	// Not found a best node.
-	return NodeID(""), FullError
+	if bestId == "" {
+		return "", FullError
+	}
+
+	// Found the best node.
+	n := s.nodes[bestId]
+	n.VCPU.Reserved += spec.Processors
+	n.VMem.Reserved += spec.Memory
+	return bestId, nil
 }
 
 // Use notifies it to scheduler that specified VM started to running.

@@ -121,7 +121,13 @@ func TestScheduler_Schedule(t *testing.T) {
 				// Low memory (free memory is 500 MiB).
 				{
 					NodeID: NodeID("1"),
-					PMem:   1024,
+					PCPU:   4,
+					VCPU: struct {
+						Max      int
+						Used     int
+						Reserved int
+					}{Max: 16, Used: 8, Reserved: 0},
+					PMem: 1024,
 					VMem: struct {
 						System   int
 						Used     int
@@ -148,6 +154,7 @@ func TestScheduler_Schedule(t *testing.T) {
 				// Low vCPUs (Number of free vCPUs is 8).
 				{
 					NodeID: NodeID("1"),
+					PCPU:   4,
 					VCPU: struct {
 						Max      int
 						Used     int
@@ -180,7 +187,13 @@ func TestScheduler_Schedule(t *testing.T) {
 				// Free memory is 1000 MiB.
 				{
 					NodeID: NodeID("1"),
-					PMem:   2024,
+					PCPU:   4,
+					VCPU: struct {
+						Max      int
+						Used     int
+						Reserved int
+					}{Max: 30, Used: 3, Reserved: 2},
+					PMem: 2024,
 					VMem: struct {
 						System   int
 						Used     int
