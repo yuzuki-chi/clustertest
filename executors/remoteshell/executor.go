@@ -108,6 +108,9 @@ func (e *Executor) sshCommand(remoteCmd string) []string {
 	// Add options to disable known_hosts.
 	sshCmd = append(sshCmd, "-o", "StrictHostKeyChecking=no")
 	sshCmd = append(sshCmd, "-o", "UserKnownHostsFile=/dev/null")
+	// Add options to detect disconnection by the keep-alive feature.
+	sshCmd = append(sshCmd, "-o", "ServerAliveInterval=3")
+	sshCmd = append(sshCmd, "-o", "ServerAliveCountMax=10")
 	sshCmd = append(sshCmd, "--", dest, remoteCmd)
 	return sshCmd
 }
