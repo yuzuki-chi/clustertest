@@ -60,7 +60,7 @@ var taskOutputCmd = &cobra.Command{
 var taskDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete finished tasks",
-	RunE:  notImplemented,
+	RunE:  taskDeleteFn,
 }
 
 func init() {
