@@ -174,10 +174,10 @@ func (c *PveClient) CloneVM(from, to NodeVMID, name, description, pool string) *
 
 			// TODO: shared storageを使うなら、"target"オプションを追加。
 			query := struct {
-				NewVMID     VMID   `url:"newid"`
-				Name        string `url:"name"`
-				Description string `url:"description"`
-				Pool        string `url:"pool"`
+				NewVMID     VMID   `json:"newid"`
+				Name        string `json:"name"`
+				Description string `json:"description"`
+				Pool        string `json:"pool"`
 			}{
 				NewVMID:     to.VMID,
 				Name:        name,
@@ -188,7 +188,7 @@ func (c *PveClient) CloneVM(from, to NodeVMID, name, description, pool string) *
 
 			var taskID TaskID
 			data := struct{ Data interface{} }{&taskID}
-			err := c.reqJSON("POST", url, query, nil, &data)
+			err := c.reqJSON("POST", url, nil, query, &data)
 			if err != nil {
 				return err
 			}
