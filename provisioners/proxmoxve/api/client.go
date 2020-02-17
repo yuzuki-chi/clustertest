@@ -178,11 +178,14 @@ func (c *PveClient) CloneVM(from, to NodeVMID, name, description, pool string) *
 				Name        string `json:"name"`
 				Description string `json:"description"`
 				Pool        string `json:"pool"`
+				// WORKAROUND: On PVE v6.1-7, failed to clone if the "target" parameter was missing.
+				Target string `json:"target"`
 			}{
 				NewVMID:     to.VMID,
 				Name:        name,
 				Description: description,
 				Pool:        pool,
+				Target:      string(from.NodeID),
 			}
 			url := fmt.Sprintf("/api2/json/nodes/%s/qemu/%s/clone", from.NodeID, from.VMID)
 
